@@ -22,7 +22,6 @@ import { CartItem, Language, Product, StoreSettings } from "@/types";
 import { formatUzbekCurrency } from "@/lib/format";
 import SmartSizeCalculator from "@/components/store/SmartSizeCalculator";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
-import DemoBanner from "@/components/common/DemoBanner";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -169,9 +168,6 @@ export default function ProductDetailClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-white pb-28 font-sans selection:bg-[#2563EB] selection:text-white transition-colors">
-      {/* Top Demo Banner */}
-      <DemoBanner lang={lang} />
-
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#E2E8F0] dark:border-slate-800 px-4 sm:px-6 lg:px-8 py-3.5 transition-colors">
         <div className="max-w-5xl mx-auto flex items-center justify-between">

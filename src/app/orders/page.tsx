@@ -26,7 +26,6 @@ import { DEFAULT_SETTINGS } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
-import DemoBanner from "@/components/common/DemoBanner";
 
 export default function CustomerOrdersPage() {
   const router = useRouter();
@@ -176,9 +175,6 @@ export default function CustomerOrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-white pb-24 font-sans selection:bg-[#2563EB] selection:text-white transition-colors">
-      {/* Top Demo Banner */}
-      <DemoBanner lang={lang} />
-
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#E2E8F0] dark:border-slate-800 px-4 sm:px-6 py-3.5 transition-colors">
         <div className="max-w-4xl mx-auto flex items-center justify-between">

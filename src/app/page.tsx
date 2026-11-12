@@ -17,7 +17,6 @@ import { BranchHub } from "@/components/store/BranchHub";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
 import OfflineBanner from "@/components/common/OfflineBanner";
 import ToastNotification, { ToastType } from "@/components/common/ToastNotification";
-import DemoBanner from "@/components/common/DemoBanner";
 import {
   CartItem,
   Customer,
@@ -423,9 +422,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen max-w-[100vw] overflow-x-clip bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col font-sans transition-colors duration-200 selection:bg-[#2563EB] selection:text-white pb-24 md:pb-12">
-      {/* 0. Top Prospective Business Buyer Demo Banner */}
-      <DemoBanner lang={lang} />
-
       {/* 1. Global Desktop Header (Phase 2.2) */}
       <CustomerNavbar
         lang={lang}
