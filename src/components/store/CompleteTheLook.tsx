@@ -88,7 +88,7 @@ export default function CompleteTheLook({
               {isRu ? "Завершите образ (Complete the Look)" : "Obrazni To'ldiring (Complete the Look)"}
             </h4>
             <p className="text-[10px] text-zinc-400">
-              {isRu ? "Стилисты BUTTON подобрали идеальное сочетание" : "BUTTON stilistlari tanlagan mos to'plam"}
+              {isRu ? "Стилисты подобрали идеальное сочетание" : "Stilistlarimiz tanlagan mos to'plam"}
             </p>
           </div>
         </div>

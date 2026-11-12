@@ -1,13 +1,13 @@
 import { Branch, Category, Product, StoreSettings } from "@/types";
 
-export const STORE_NAME = "BUTTON Men's Wear";
-export const STORE_HANDLE = "@button_uz";
-export const STORE_INSTAGRAM = "https://www.instagram.com/button_uz/";
-export const STORE_TELEGRAM = "https://t.me/button_uzbekistan";
+export const STORE_NAME = "MODA UZ";
+export const STORE_HANDLE = "@modauz_demo";
+export const STORE_INSTAGRAM = "https://www.instagram.com/modauz_demo/";
+export const STORE_TELEGRAM = "https://t.me/modauz_demo";
 
 export const CONTACT_PHONES = [
-  { raw: "+998946135555", display: "+998 94 613 55 55", label: "Chilonzor & Sergeli" },
-  { raw: "+998996135555", display: "+998 99 613 55 55", label: "Yunusobod (Mega Planet)" },
+  { raw: "+998901234567", display: "+998 90 123 45 67", label: "Markaziy filial (Demo)" },
+  { raw: "+998911234567", display: "+998 91 123 45 67", label: "Yunusobod filiali (Demo)" },
 ];
 
 export const WORKING_HOURS = {
@@ -18,8 +18,8 @@ export const WORKING_HOURS = {
 };
 
 export const SHOWROOM_WIFI = {
-  ssid: "BUTTON_GUEST",
-  password: "buttonmenswear",
+  ssid: "MODA_GUEST",
+  password: "modauz2026",
 };
 
 export const CATEGORIES: Category[] = [
@@ -35,32 +35,32 @@ export const CATEGORIES: Category[] = [
 
 export const BRANCHES: Branch[] = [
   {
-    "id": "chilonzor",
-    "name": "Chilonzor filiali",
-    "nameRu": "Филиал Чиланзар",
-    "address": "Toshkent sh., Chilonzor tumani, 16-mavze, Katta Qa'ni ko'chasi",
-    "addressRu": "г. Ташкент, Чиланзарский р-н, 16-й квартал, ул. Катта Каъни",
-    "landmark": "16-mavze savdo markazi yonida",
-    "landmarkRu": "Рядом с ТЦ 16-го квартала",
-    "phone": "+998 94 613 55 55",
+    "id": "markaziy",
+    "name": "Toshkent sh., Markaziy filial (Demo)",
+    "nameRu": "г. Ташкент, Центральный филиал (Demo)",
+    "address": "Toshkent sh., Amir Temur shoh ko'chasi, 107-uy",
+    "addressRu": "г. Ташкент, проспект Амира Темура, 107",
+    "landmark": "Markaziy universal do'kon yaqini",
+    "landmarkRu": "Ориентир: рядом с Центральным универмагом",
+    "phone": "+998 90 123 45 67",
     "workingHours": "10:00 – 22:00 (dam olishsiz)",
     "workingHoursRu": "10:00 – 22:00 (без выходных)",
-    "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Chilonzor+16-mavze",
-    "googleMap": "https://maps.google.com/?q=41.2715,69.1852",
+    "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Amir+Temur+107",
+    "googleMap": "https://maps.google.com/?q=41.3111,69.2797",
     "coordinates": {
-      "lat": 41.2715,
-      "lng": 69.1852
+      "lat": 41.3111,
+      "lng": 69.2797
     }
   },
   {
     "id": "yunusobod",
-    "name": "Yunusobod filiali (Mega Planet yaqini)",
-    "nameRu": "Филиал Юнусабад (около ТРЦ Mega Planet)",
+    "name": "Yunusobod filiali (Demo)",
+    "nameRu": "Филиал Юнусабад (Demo)",
     "address": "Toshkent sh., Yunusobod tumani, Ahmad Donish ko'chasi, Mega Planet yaqini",
     "addressRu": "г. Ташкент, Юнусабадский р-н, ул. Ахмада Дониша, около ТРЦ Mega Planet",
     "landmark": "Mega Planet savdo majmuasi yaqinida",
     "landmarkRu": "Ориентир: рядом с ТРЦ Mega Planet",
-    "phone": "+998 99 613 55 55",
+    "phone": "+998 91 123 45 67",
     "workingHours": "10:00 – 22:00 (dam olishsiz)",
     "workingHoursRu": "10:00 – 22:00 (без выходных)",
     "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Yunusobod+Mega+Planet",
@@ -71,21 +71,21 @@ export const BRANCHES: Branch[] = [
     }
   },
   {
-    "id": "sergeli",
-    "name": "Sergeli filiali",
-    "nameRu": "Филиал Сергели",
-    "address": "Toshkent sh., Sergeli tumani, Yangi Sergeli ko'chasi, Dehqon bozori hududi",
-    "addressRu": "г. Ташкент, Сергелийский р-н, ул. Янги Сергели, район Дехканского рынка",
-    "landmark": "Sergeli dehqon bozori va metro bekati yaqini",
-    "landmarkRu": "Ориентир: рынок Сергели и станция метро",
-    "phone": "+998 94 613 55 55",
+    "id": "chilonzor",
+    "name": "Chilonzor filiali (Demo)",
+    "nameRu": "Филиал Чиланзар (Demo)",
+    "address": "Toshkent sh., Chilonzor tumani, 16-mavze, Katta Qa'ni ko'chasi",
+    "addressRu": "г. Ташкент, Чиланзарский р-н, 16-й квартал, ул. Катта Каъни",
+    "landmark": "16-mavze savdo markazi yonida",
+    "landmarkRu": "Рядом с ТЦ 16-го квартала",
+    "phone": "+998 90 123 45 67",
     "workingHours": "10:00 – 22:00 (dam olishsiz)",
     "workingHoursRu": "10:00 – 22:00 (без выходных)",
-    "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Sergeli+bozor",
-    "googleMap": "https://maps.google.com/?q=41.2238,69.2185",
+    "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Chilonzor+16-mavze",
+    "googleMap": "https://maps.google.com/?q=41.2715,69.1852",
     "coordinates": {
-      "lat": 41.2238,
-      "lng": 69.2185
+      "lat": 41.2715,
+      "lng": 69.1852
     }
   }
 ];
@@ -119,7 +119,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Zich va yuqori sifatli 100% paxta matosidan tayyorlangan oversize futbolka. Shaklini yo'qotmaydi.",
     "descriptionRu": "Оверсайз футболка из плотного 100% премиум хлопка. Отлично держит форму после стирок.",
     "price": 160000,
-    "oldPrice": 200000,
     "category": "polos",
     "image": "/products/btn-002.jpg",
     "sizes": [
@@ -129,8 +128,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "XL"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Trend",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:05:00Z"
   },
   {
@@ -140,7 +138,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "To'g'ri bichimli (Straight Fit) qulay klassik jinsi shim. Yuqori sifatli denim mato, ko'k va qora ranglarda.",
     "descriptionRu": "Прямые классические джинсы из плотного денима. Идеальная посадка, базовые расцветки.",
     "price": 320000,
-    "oldPrice": 390000,
     "category": "pants",
     "image": "/products/btn-003.jpg",
     "sizes": [
@@ -153,8 +150,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "36"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Klassika",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:10:00Z"
   },
   {
@@ -177,7 +173,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": true,
-    "badge": "Premium",
+    "badge": "Xit",
     "createdAt": "2026-11-08T10:15:00Z"
   },
   {
@@ -197,7 +193,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "2XL"
     ],
     "isAvailable": true,
-    "isFeatured": false,
+    "isFeatured": true,
     "badge": "Yangi",
     "createdAt": "2026-11-08T10:20:00Z"
   },
@@ -229,7 +225,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Klassik va qulay chinos shimlari. Paxta va elastan aralashmasi qulay harakatlanishni ta'minlaydi.",
     "descriptionRu": "Классические удобные брюки чинос из хлопка с добавлением эластана.",
     "price": 290000,
-    "oldPrice": 360000,
     "category": "pants",
     "image": "/products/btn-007.jpg",
     "sizes": [
@@ -242,7 +237,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Klassika",
     "createdAt": "2026-11-08T10:30:00Z"
   },
   {
@@ -252,7 +246,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Ikki qismli erkaklar sport-casual to'plami (kurtka va shim). Sayohat va kundalik kiyish uchun ideal.",
     "descriptionRu": "Удобный стильный костюм-двойка (куртка и штаны) для активного отдыха и прогулок.",
     "price": 480000,
-    "oldPrice": 590000,
     "category": "suits",
     "image": "/products/btn-008.jpg",
     "sizes": [
@@ -262,8 +255,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "2XL"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Top Set",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:35:00Z"
   },
   {
@@ -273,7 +265,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Klassik tugmali yoqaga ega Oksford ko'ylagi. 100% paxta, qulay bichim va dazmollash oson.",
     "descriptionRu": "Классическая хлопковая оксфордская рубашка. Идеальна для делового стиля и джинсов.",
     "price": 250000,
-    "oldPrice": 310000,
     "category": "polos",
     "image": "/products/btn-009.jpg",
     "sizes": [
@@ -285,7 +276,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Biznes",
     "createdAt": "2026-11-08T10:40:00Z"
   },
   {
@@ -295,7 +285,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Oq charm krossovkalar — har qanday kiyim bilan mos tushuvchi minimalist universal poyabzal.",
     "descriptionRu": "Универсальные белые кожаные кеды в минималистичном дизайне. Базовый элемент гардероба.",
     "price": 390000,
-    "oldPrice": 480000,
     "category": "shoes",
     "image": "/products/btn-010.jpg",
     "sizes": [
@@ -306,8 +295,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "44"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Must Have",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:45:00Z"
   },
   {
@@ -317,7 +305,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Yengil va issiq ushlovchi jiletka. Bahor-kuz mavsumida xudi yoki sviter ustidan kiyish uchun zo'r tanlov.",
     "descriptionRu": "Легкий утепленный мужской жилет. Отлично смотрится поверх худи и свитеров.",
     "price": 350000,
-    "oldPrice": 430000,
     "category": "jackets",
     "image": "/products/btn-011.jpg",
     "sizes": [
@@ -327,8 +314,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "2XL"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Trend",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:50:00Z"
   },
   {
@@ -338,7 +324,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Yarim zamokli yumshoq flis svitshot. Iliq va juda qulay bichim, sovuq kunlar uchun mukammal.",
     "descriptionRu": "Теплый и мягкий флисовый свитшот на молнии. Превосходный комфорт для прохладных дней.",
     "price": 260000,
-    "oldPrice": 320000,
     "category": "hoodies",
     "image": "/products/btn-012.jpg",
     "sizes": [
@@ -349,7 +334,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Qulay",
     "createdAt": "2026-11-08T10:55:00Z"
   },
   {
@@ -370,7 +354,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": true,
-    "badge": "Yozgi Xit",
+    "badge": "Yangi",
     "createdAt": "2026-11-08T11:00:00Z"
   },
   {
@@ -380,7 +364,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Yon cho'ntakli kargo jogger shimlari. Zamonaviy ko'cha uslubi va baquvvat mato.",
     "descriptionRu": "Стильные брюки карго с накладными карманами и манжетами. Прочная хлопковая ткань.",
     "price": 270000,
-    "oldPrice": 340000,
     "category": "pants",
     "image": "/products/btn-014.jpg",
     "sizes": [
@@ -392,7 +375,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Urban",
     "createdAt": "2026-11-08T11:05:00Z"
   },
   {
@@ -402,7 +384,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Dumaloq yoqali asosiy (baza) sviter. Klassik shimlar yoki jinsi bilan a'lo darajada uyg'unlashadi.",
     "descriptionRu": "Базовый свитер с классическим круглым воротом. Отлично сочетается с брюками и джинсами.",
     "price": 230000,
-    "oldPrice": 290000,
     "category": "hoodies",
     "image": "/products/btn-015.jpg",
     "sizes": [
@@ -413,7 +394,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Baza",
     "createdAt": "2026-11-08T11:10:00Z"
   },
   {
@@ -423,7 +403,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Tabiiy zamshdan ishlangan Chelsi etiklari. Premium ko'rinish va o'ta qulay qolip.",
     "descriptionRu": "Элегантные мужские ботинки челси из натуральной замши на прочной подошве.",
     "price": 520000,
-    "oldPrice": 650000,
     "category": "shoes",
     "image": "/products/btn-016.jpg",
     "sizes": [
@@ -434,8 +413,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "44"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Premium",
+    "isFeatured": false,
     "createdAt": "2026-11-08T11:15:00Z"
   },
   {
@@ -466,7 +444,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Chiziqli qisqa yengli polo ko'ylak. Nafas oluvchi paxta matosi va premium detallar.",
     "descriptionRu": "Стильная рубашка-поло в тонкую полоску. Дышащий хлопок и качественная фурнитура.",
     "price": 195000,
-    "oldPrice": 240000,
     "category": "polos",
     "image": "/products/btn-018.jpg",
     "sizes": [
@@ -477,7 +454,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Yangi",
     "createdAt": "2026-11-08T11:25:00Z"
   },
   {
@@ -487,7 +463,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Yun aralashmali klassik shim (strelkali). To'g'ri o'tiruvchi bichim, ofis va tantanalar uchun mos.",
     "descriptionRu": "Элегантные классические брюки со стрелками из полушерстяной ткани. Превосходная посадка.",
     "price": 310000,
-    "oldPrice": 380000,
     "category": "pants",
     "image": "/products/btn-019.jpg",
     "sizes": [
@@ -499,8 +474,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       "36"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Klassika",
+    "isFeatured": false,
     "createdAt": "2026-11-08T11:30:00Z"
   },
   {
@@ -510,15 +484,13 @@ export const INITIAL_PRODUCTS: Product[] = [
     "description": "Tabiiy charm kamar va minimalist hamyon (kardxolder) to'plami. Sovg'a uchun ideal qadoqda.",
     "descriptionRu": "Стильный мужской набор из натуральной кожи: ремень и компактный картхолдер-кошелек.",
     "price": 180000,
-    "oldPrice": 230000,
     "category": "accessories",
     "image": "/products/btn-020.jpg",
     "sizes": [
       "Standart"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Sovg'abop",
+    "isFeatured": false,
     "createdAt": "2026-11-08T11:35:00Z"
   }
 ];
@@ -526,56 +498,56 @@ export const INITIAL_PRODUCTS: Product[] = [
 export const DEFAULT_SETTINGS: StoreSettings = {
   "adminPin": "1234",
   "adminName": "Admin",
-  "adminEmail": "admin@button.uz",
-  "storeName": "BUTTON Men's Wear",
-  "storeHandle": "@button_uz",
-  "storeBioUz": "Zamonaviy erkaklar kiyimlari, poyabzal va aksessuarlar. Toshkent bo'ylab va O'zbekiston viloyatlariga tezkor yetkazib berish.",
-  "storeBioRu": "Стильная мужская одежда, обувь и аксессуары. Быстрая доставка по Ташкенту и всем регионам Узбекистана.",
-  "storeAvatar": "/btn-logo.png",
-  "storeHeroBanner": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80",
-  "instagramUrl": "https://www.instagram.com/button_uz/",
-  "telegramUrl": "https://t.me/button_uzbekistan",
-  "phone1": "+998 94 613 55 55",
-  "phone2": "+998 99 613 55 55",
+  "adminEmail": "admin@modauz.demo",
+  "storeName": "MODA UZ",
+  "storeHandle": "@modauz_demo",
+  "storeBioUz": "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
+  "storeBioRu": "Современный интернет-магазин одежды и обуви",
+  "storeAvatar": "/moda-logo.svg",
+  "storeHeroBanner": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
+  "instagramUrl": "https://www.instagram.com/modauz_demo/",
+  "telegramUrl": "https://t.me/modauz_demo",
+  "phone1": "+998 90 123 45 67",
+  "phone2": "+998 91 123 45 67",
   "workingHoursUz": "Har kuni 10:00 – 22:00 (dam olishsiz)",
   "workingHoursRu": "Ежедневно 10:00 – 22:00 (без выходных)",
-  "wifiSsid": "BUTTON_GUEST",
-  "wifiPassword": "buttonmenswear",
+  "wifiSsid": "MODA_GUEST",
+  "wifiPassword": "modauz2026",
   "cardNumber": "8600 1234 5678 9999",
-  "cardHolder": "BUTTON MEN WEAR LLC",
+  "cardHolder": "MODA UZ LLC",
   "cardBank": "Kapitalbank (Uzcard)",
   "card2Number": "9860 1201 3344 7788",
-  "card2Holder": "BUTTON MEN WEAR LLC",
+  "card2Holder": "MODA UZ LLC",
   "card2Bank": "TBC Bank (Humo / Visa)",
   "card2Enabled": true,
   "branches": [
     {
-      "id": "chilonzor",
-      "name": "Chilonzor filiali",
-      "nameRu": "Филиал Чиланзар",
-      "address": "Toshkent sh., Chilonzor tumani, 16-mavze, Katta Qa'ni ko'chasi",
-      "addressRu": "г. Ташкент, Чиланзарский р-н, 16-й квартал, ул. Катта Каъни",
-      "landmark": "16-mavze savdo markazi yonida",
-      "landmarkRu": "Рядом с ТЦ 16-го квартала",
-      "phone": "+998 94 613 55 55",
+      "id": "markaziy",
+      "name": "Toshkent sh., Markaziy filial (Demo)",
+      "nameRu": "г. Ташкент, Центральный филиал (Demo)",
+      "address": "Toshkent sh., Amir Temur shoh ko'chasi, 107-uy",
+      "addressRu": "г. Ташкент, проспект Амира Темура, 107",
+      "landmark": "Markaziy universal do'kon yaqini",
+      "landmarkRu": "Ориентир: рядом с Центральным универмагом",
+      "phone": "+998 90 123 45 67",
       "workingHours": "10:00 – 22:00 (dam olishsiz)",
       "workingHoursRu": "10:00 – 22:00 (без выходных)",
-      "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Chilonzor+16-mavze",
-      "googleMap": "https://maps.google.com/?q=41.2715,69.1852",
+      "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Amir+Temur+107",
+      "googleMap": "https://maps.google.com/?q=41.3111,69.2797",
       "coordinates": {
-        "lat": 41.2715,
-        "lng": 69.1852
+        "lat": 41.3111,
+        "lng": 69.2797
       }
     },
     {
       "id": "yunusobod",
-      "name": "Yunusobod filiali (Mega Planet yaqini)",
-      "nameRu": "Филиал Юнусабад (около ТРЦ Mega Planet)",
+      "name": "Yunusobod filiali (Demo)",
+      "nameRu": "Филиал Юнусабад (Demo)",
       "address": "Toshkent sh., Yunusobod tumani, Ahmad Donish ko'chasi, Mega Planet yaqini",
       "addressRu": "г. Ташкент, Юнусабадский р-н, ул. Ахмада Дониша, около ТРЦ Mega Planet",
       "landmark": "Mega Planet savdo majmuasi yaqinida",
       "landmarkRu": "Ориентир: рядом с ТРЦ Mega Planet",
-      "phone": "+998 99 613 55 55",
+      "phone": "+998 91 123 45 67",
       "workingHours": "10:00 – 22:00 (dam olishsiz)",
       "workingHoursRu": "10:00 – 22:00 (без выходных)",
       "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Yunusobod+Mega+Planet",
@@ -586,26 +558,26 @@ export const DEFAULT_SETTINGS: StoreSettings = {
       }
     },
     {
-      "id": "sergeli",
-      "name": "Sergeli filiali",
-      "nameRu": "Филиал Сергели",
-      "address": "Toshkent sh., Sergeli tumani, Yangi Sergeli ko'chasi, Dehqon bozori hududi",
-      "addressRu": "г. Ташкент, Сергелийский р-н, ул. Янги Сергели, район Дехканского рынка",
-      "landmark": "Sergeli dehqon bozori va metro bekati yaqini",
-      "landmarkRu": "Ориентир: рынок Сергели и станция метро",
-      "phone": "+998 94 613 55 55",
+      "id": "chilonzor",
+      "name": "Chilonzor filiali (Demo)",
+      "nameRu": "Филиал Чиланзар (Demo)",
+      "address": "Toshkent sh., Chilonzor tumani, 16-mavze, Katta Qa'ni ko'chasi",
+      "addressRu": "г. Ташкент, Чиланзарский р-н, 16-й квартал, ул. Катта Каъни",
+      "landmark": "16-mavze savdo markazi yonida",
+      "landmarkRu": "Рядом с ТЦ 16-го квартала",
+      "phone": "+998 90 123 45 67",
       "workingHours": "10:00 – 22:00 (dam olishsiz)",
       "workingHoursRu": "10:00 – 22:00 (без выходных)",
-      "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Sergeli+bozor",
-      "googleMap": "https://maps.google.com/?q=41.2238,69.2185",
+      "yandexMap": "https://yandex.uz/maps/?text=Toshkent+Chilonzor+16-mavze",
+      "googleMap": "https://maps.google.com/?q=41.2715,69.1852",
       "coordinates": {
-        "lat": 41.2238,
-        "lng": 69.2185
+        "lat": 41.2715,
+        "lng": 69.1852
       }
     }
   ],
-  "telegramBotToken": "9177942848:AAH0ipLIRHVJTv6swun6d6_wvJoM_Fr1WL0",
-  "telegramChatId": "-5308553299",
+  "telegramBotToken": "",
+  "telegramChatId": "",
   "geminiApiKey": "",
   "deliveryPriceTashkent": 30000,
   "deliveryFreeThresholdTashkent": 500000,

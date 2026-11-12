@@ -35,6 +35,7 @@ import {
   Download,
 } from "lucide-react";
 import { Customer, CustomerMeasurements, Language, Order, Product } from "@/types";
+import { DEFAULT_SETTINGS } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 
@@ -163,14 +164,14 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
   useEffect(() => {
     try {
-      const looks = localStorage.getItem("button_saved_outfits");
+      const looks = localStorage.getItem("moda_saved_outfits") || localStorage.getItem("button_saved_outfits");
       if (looks) {
         const parsed = JSON.parse(looks);
         if (Array.isArray(parsed)) {
           setSavedOutfits(parsed);
         }
       }
-      const addrs = localStorage.getItem("button_saved_addresses");
+      const addrs = localStorage.getItem("moda_saved_addresses") || localStorage.getItem("button_saved_addresses");
       if (addrs) {
         const parsed = JSON.parse(addrs);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -253,7 +254,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     setNewAddressInput("");
     setIsAddingAddress(false);
     try {
-      localStorage.setItem("button_saved_addresses", JSON.stringify(next));
+      localStorage.setItem("moda_saved_addresses", JSON.stringify(next));
     } catch (e) {}
   };
 
@@ -261,7 +262,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     const next = savedAddresses.filter((_, i) => i !== idx);
     setSavedAddresses(next);
     try {
-      localStorage.setItem("button_saved_addresses", JSON.stringify(next));
+      localStorage.setItem("moda_saved_addresses", JSON.stringify(next));
     } catch (e) {}
   };
 
@@ -439,11 +440,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           {/* Quick Support & Courier Contact (Flow E) */}
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             <a
-              href="tel:+998946135555"
+              href={`tel:${(DEFAULT_SETTINGS.phone1 || "+998 90 123 45 67").replace(/\s+/g, "")}`}
               className="px-4 py-2.5 rounded-xl bg-[#F1F5F9] dark:bg-[#1e293b] hover:bg-[#E2E8F0] dark:hover:bg-slate-700 border border-[#E2E8F0] dark:border-slate-700 text-[#0F172A] dark:text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Phone className="w-3.5 h-3.5 text-violet-700 dark:text-violet-400" />
-              <span>{isUz ? "Qo'llab-quvvatlash: +998 94 613 55 55" : "Служба заботы: +998 94 613 55 55"}</span>
+              <span>{isUz ? `Qo'llab-quvvatlash: ${DEFAULT_SETTINGS.phone1 || "+998 90 123 45 67"}` : `Служба заботы: ${DEFAULT_SETTINGS.phone1 || "+998 90 123 45 67"}`}</span>
             </a>
             <button
               type="button"
@@ -1328,7 +1329,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </div>
             <div className="min-w-0">
               <span className="block text-xs sm:text-sm font-bold text-[#0F172A] dark:text-white truncate">
-                {isUz ? "BUTTON ilovasini telefoningizga o'rnatish" : "Установить приложение BUTTON на телефон"}
+                {isUz ? "MODA UZ ilovasini telefoningizga o'rnatish" : "Установить приложение MODA UZ на телефон"}
               </span>
               <span className="block text-[11px] text-blue-600 dark:text-blue-400 font-semibold truncate">
                 {isUz ? "Bosh ekranga qo'shish va 1 bosishda tezkor kirish (PWA)" : "Добавить на главный экран для быстрого входа"}

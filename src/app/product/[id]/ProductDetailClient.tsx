@@ -22,6 +22,7 @@ import { CartItem, Language, Product, StoreSettings } from "@/types";
 import { formatUzbekCurrency } from "@/lib/format";
 import SmartSizeCalculator from "@/components/store/SmartSizeCalculator";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
+import DemoBanner from "@/components/common/DemoBanner";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -65,7 +66,7 @@ export default function ProductDetailClient({
   // Load theme and cart from localStorage
   useEffect(() => {
     // Theme sync
-    const savedTheme = localStorage.getItem("button_theme");
+    const savedTheme = localStorage.getItem("moda_theme") || localStorage.getItem("button_theme");
     if (savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"))) {
       setIsDark(true);
       document.documentElement.classList.add("dark");
@@ -77,13 +78,13 @@ export default function ProductDetailClient({
     }
 
     // Lang sync
-    const savedLang = localStorage.getItem("button_lang");
+    const savedLang = localStorage.getItem("moda_lang") || localStorage.getItem("button_lang");
     if (savedLang === "uz" || savedLang === "ru") {
       setLang(savedLang);
     }
 
     try {
-      const saved = localStorage.getItem("button_cart");
+      const saved = localStorage.getItem("moda_cart") || localStorage.getItem("button_cart");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) setCartItems(parsed);
@@ -95,7 +96,7 @@ export default function ProductDetailClient({
     const nextTheme = !isDark;
     setIsDark(nextTheme);
     try {
-      localStorage.setItem("button_theme", nextTheme ? "dark" : "light");
+      localStorage.setItem("moda_theme", nextTheme ? "dark" : "light");
       if (nextTheme) {
         document.documentElement.classList.add("dark");
         document.documentElement.setAttribute("data-theme", "dark");
@@ -110,7 +111,7 @@ export default function ProductDetailClient({
 
   const saveCart = (items: CartItem[]) => {
     setCartItems(items);
-    localStorage.setItem("button_cart", JSON.stringify(items));
+    localStorage.setItem("moda_cart", JSON.stringify(items));
   };
 
   const handleAddToCart = (p: Product, size: string, color?: string, qty = 1) => {
@@ -151,7 +152,7 @@ export default function ProductDetailClient({
       try {
         await navigator.share({
           title: product.name,
-          text: `${product.name} — BUTTON Men's Wear`,
+          text: `${product.name} — ${settings?.storeName || "MODA UZ"}`,
           url: window.location.href,
         });
         return;
@@ -168,6 +169,9 @@ export default function ProductDetailClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-white pb-28 font-sans selection:bg-[#2563EB] selection:text-white transition-colors">
+      {/* Top Demo Banner */}
+      <DemoBanner lang={lang} />
+
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#E2E8F0] dark:border-slate-800 px-4 sm:px-6 lg:px-8 py-3.5 transition-colors">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -182,10 +186,10 @@ export default function ProductDetailClient({
 
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl overflow-hidden relative border border-[#2563EB]/30">
-              <Image src="/btn-logo.png" alt="BUTTON" fill className="object-cover" unoptimized />
+              <Image src={settings?.storeAvatar || "/moda-logo.svg"} alt={settings?.storeName || "MODA UZ"} fill className="object-cover" unoptimized />
             </div>
             <span className="font-black text-sm tracking-widest text-[#0F172A] dark:text-white">
-              BUTTON MEN
+              {settings?.storeName || "MODA UZ"}
             </span>
           </Link>
 
@@ -196,7 +200,7 @@ export default function ProductDetailClient({
                 type="button"
                 onClick={() => {
                   setLang("uz");
-                  localStorage.setItem("button_lang", "uz");
+                  localStorage.setItem("moda_lang", "uz");
                 }}
                 className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
                   lang === "uz" ? "bg-[#2563EB] text-white shadow-xs font-black" : "text-[#64748B] dark:text-slate-400"
@@ -208,7 +212,7 @@ export default function ProductDetailClient({
                 type="button"
                 onClick={() => {
                   setLang("ru");
-                  localStorage.setItem("button_lang", "ru");
+                  localStorage.setItem("moda_lang", "ru");
                 }}
                 className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
                   lang === "ru" ? "bg-[#2563EB] text-white shadow-xs font-black" : "text-[#64748B] dark:text-slate-400"
@@ -312,7 +316,7 @@ export default function ProductDetailClient({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#2563EB]">
-                  BUTTON Men's Wear
+                  {settings?.storeName || "MODA UZ"}
                 </span>
                 <button
                   type="button"

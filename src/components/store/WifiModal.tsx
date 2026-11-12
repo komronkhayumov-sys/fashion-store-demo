@@ -16,6 +16,7 @@ interface WifiModalProps {
 export const WifiModal: React.FC<WifiModalProps> = ({ isOpen, lang, settings, onClose }) => {
   const [copied, setCopied] = useState(false);
   const t = translations[lang];
+  const isUz = lang === "uz";
 
   if (!isOpen) return null;
 
@@ -49,7 +50,7 @@ export const WifiModal: React.FC<WifiModalProps> = ({ isOpen, lang, settings, on
             {t.showroomWifiTitle}
           </h3>
           <p className="text-xs text-[#64748B] dark:text-slate-400 mt-1">
-            BUTTON do'konlarimizda bepul va tezkor internet
+            {isUz ? "Do'konlarimizda bepul va tezkor internet" : "Бесплатный и быстрый интернет в наших магазинах"}
           </p>
         </div>
 

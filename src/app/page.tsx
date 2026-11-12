@@ -17,6 +17,7 @@ import { BranchHub } from "@/components/store/BranchHub";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
 import OfflineBanner from "@/components/common/OfflineBanner";
 import ToastNotification, { ToastType } from "@/components/common/ToastNotification";
+import DemoBanner from "@/components/common/DemoBanner";
 import {
   CartItem,
   Customer,
@@ -64,6 +65,17 @@ export default function HomePage() {
 
   // Loading & Toast Notification states (Phase 10: UI States)
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [timeStatus, setTimeStatus] = useState(() => getStoreTimeStatus(lang));
+
+  // Dynamic live client hydration for Uzbekistan working hours
+  useEffect(() => {
+    setTimeStatus(getStoreTimeStatus(lang));
+    const timer = setInterval(() => {
+      setTimeStatus(getStoreTimeStatus(lang));
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [lang]);
+
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: ToastType }>({
     isVisible: false,
     message: "",
@@ -101,13 +113,13 @@ export default function HomePage() {
     loadData();
 
     // Load language preference
-    const savedLang = localStorage.getItem("button_lang");
+    const savedLang = localStorage.getItem("moda_lang") || localStorage.getItem("button_lang");
     if (savedLang === "uz" || savedLang === "ru") {
       setLang(savedLang);
     }
 
     // Load theme preference
-    const savedTheme = localStorage.getItem("button_theme");
+    const savedTheme = localStorage.getItem("moda_theme") || localStorage.getItem("button_theme");
     if (savedTheme === "dark") {
       setIsDark(true);
       document.documentElement.classList.add("dark");
@@ -124,7 +136,7 @@ export default function HomePage() {
     }
 
     // Load customer session
-    const savedCustomer = localStorage.getItem("button_customer");
+    const savedCustomer = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
     if (savedCustomer) {
       try {
         setCustomer(JSON.parse(savedCustomer));
@@ -132,7 +144,7 @@ export default function HomePage() {
     }
 
     // Load wishlist
-    const savedWishlist = localStorage.getItem("button_wishlist");
+    const savedWishlist = localStorage.getItem("moda_wishlist") || localStorage.getItem("button_wishlist");
     if (savedWishlist) {
       try {
         setWishlistIds(JSON.parse(savedWishlist));
@@ -140,7 +152,7 @@ export default function HomePage() {
     }
 
     // Load cart
-    const savedCart = localStorage.getItem("button_cart");
+    const savedCart = localStorage.getItem("moda_cart") || localStorage.getItem("button_cart");
     if (savedCart) {
       try {
         setCartItems(JSON.parse(savedCart));
@@ -148,7 +160,7 @@ export default function HomePage() {
     }
 
     // Load recently viewed products (Phase 2 & P2)
-    const savedViewed = localStorage.getItem("button_recently_viewed");
+    const savedViewed = localStorage.getItem("moda_recently_viewed") || localStorage.getItem("button_recently_viewed");
     if (savedViewed) {
       try {
         setRecentlyViewedIds(JSON.parse(savedViewed));
@@ -157,7 +169,7 @@ export default function HomePage() {
 
     // Load orders & sync live status from server (Resilient local + server merge)
     let localCustomerOrders: Order[] = [];
-    const savedOrdersRaw = localStorage.getItem("button_customer_orders");
+    const savedOrdersRaw = localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders");
     if (savedOrdersRaw) {
       try {
         const parsed = JSON.parse(savedOrdersRaw);
@@ -169,13 +181,14 @@ export default function HomePage() {
     }
 
     const savedPhone =
+      localStorage.getItem("moda_customer_phone") ||
       localStorage.getItem("button_customer_phone") ||
       (savedCustomer ? (() => { try { return JSON.parse(savedCustomer)?.phone || null; } catch { return null; } })() : null) ||
       (localCustomerOrders[0]?.customerPhone || null);
 
     if (savedPhone) {
       try {
-        localStorage.setItem("button_customer_phone", savedPhone);
+        localStorage.setItem("moda_customer_phone", savedPhone);
       } catch {}
       fetch(`/api/orders?phone=${encodeURIComponent(savedPhone)}`)
         .then((r) => r.json())
@@ -189,7 +202,7 @@ export default function HomePage() {
               (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
             setCustomerOrders(merged);
-            localStorage.setItem("button_customer_orders", JSON.stringify(merged));
+            localStorage.setItem("moda_customer_orders", JSON.stringify(merged));
 
             // Auto-heal server storage if cold start lost orders
             const missingOnServer = localCustomerOrders.filter((lo) => !serverOrders.some((so) => so.id === lo.id));
@@ -212,7 +225,7 @@ export default function HomePage() {
       const exists = prev.includes(productId);
       const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
       try {
-        localStorage.setItem("button_wishlist", JSON.stringify(next));
+        localStorage.setItem("moda_wishlist", JSON.stringify(next));
       } catch (e) {}
       showToast(
         exists
@@ -257,7 +270,7 @@ export default function HomePage() {
         ];
       }
       try {
-        localStorage.setItem("button_cart", JSON.stringify(next));
+        localStorage.setItem("moda_cart", JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -269,7 +282,7 @@ export default function HomePage() {
         .map((it) => (it.id === id ? { ...it, quantity: it.quantity + delta } : it))
         .filter((it) => it.quantity > 0);
       try {
-        localStorage.setItem("button_cart", JSON.stringify(next));
+        localStorage.setItem("moda_cart", JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -279,7 +292,7 @@ export default function HomePage() {
     setCartItems((prev) => {
       const next = prev.filter((it) => it.id !== id);
       try {
-        localStorage.setItem("button_cart", JSON.stringify(next));
+        localStorage.setItem("moda_cart", JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -288,6 +301,7 @@ export default function HomePage() {
   const handleClearCart = () => {
     setCartItems([]);
     try {
+      localStorage.removeItem("moda_cart");
       localStorage.removeItem("button_cart");
     } catch (e) {}
   };
@@ -295,13 +309,13 @@ export default function HomePage() {
   const handleOrderCreated = (newOrder: Order) => {
     if (newOrder.customerPhone) {
       try {
-        localStorage.setItem("button_customer_phone", newOrder.customerPhone);
+        localStorage.setItem("moda_customer_phone", newOrder.customerPhone);
       } catch (e) {}
     }
     setCustomerOrders((prev) => {
       const next = [newOrder, ...prev.filter((o) => o.id !== newOrder.id)];
       try {
-        localStorage.setItem("button_customer_orders", JSON.stringify(next));
+        localStorage.setItem("moda_customer_orders", JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -310,7 +324,7 @@ export default function HomePage() {
   const handleSaveCustomer = async (newCustomer: Customer) => {
     setCustomer(newCustomer);
     try {
-      localStorage.setItem("button_customer", JSON.stringify(newCustomer));
+      localStorage.setItem("moda_customer", JSON.stringify(newCustomer));
       fetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -323,6 +337,9 @@ export default function HomePage() {
     setCustomer(null);
     setCustomerOrders([]);
     try {
+      localStorage.removeItem("moda_customer");
+      localStorage.removeItem("moda_customer_phone");
+      localStorage.removeItem("moda_customer_orders");
       localStorage.removeItem("button_customer");
       localStorage.removeItem("button_customer_phone");
       localStorage.removeItem("button_customer_orders");
@@ -336,7 +353,7 @@ export default function HomePage() {
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
     try {
-      localStorage.setItem("button_lang", newLang);
+      localStorage.setItem("moda_lang", newLang);
     } catch (e) {}
   };
 
@@ -348,14 +365,14 @@ export default function HomePage() {
       document.documentElement.setAttribute("data-theme", "dark");
       document.documentElement.style.colorScheme = "dark";
       try {
-        localStorage.setItem("button_theme", "dark");
+        localStorage.setItem("moda_theme", "dark");
       } catch (e) {}
     } else {
       document.documentElement.classList.remove("dark");
       document.documentElement.setAttribute("data-theme", "light");
       document.documentElement.style.colorScheme = "light";
       try {
-        localStorage.setItem("button_theme", "light");
+        localStorage.setItem("moda_theme", "light");
       } catch (e) {}
     }
   };
@@ -389,7 +406,7 @@ export default function HomePage() {
     setRecentlyViewedIds((prev) => {
       const next = [p.id, ...prev.filter((id) => id !== p.id)].slice(0, 8);
       try {
-        localStorage.setItem("button_recently_viewed", JSON.stringify(next));
+        localStorage.setItem("moda_recently_viewed", JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -406,6 +423,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen max-w-[100vw] overflow-x-clip bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col font-sans transition-colors duration-200 selection:bg-[#2563EB] selection:text-white pb-24 md:pb-12">
+      {/* 0. Top Prospective Business Buyer Demo Banner */}
+      <DemoBanner lang={lang} />
+
       {/* 1. Global Desktop Header (Phase 2.2) */}
       <CustomerNavbar
         lang={lang}
@@ -485,19 +505,14 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-              {(() => {
-                const timeStatus = getStoreTimeStatus(lang);
-                return (
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                    timeStatus.isOpen
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${timeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-                    <span>{lang === "uz" ? timeStatus.statusTextUz : timeStatus.statusTextRu}</span>
-                  </span>
-                );
-              })()}
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                timeStatus.isOpen
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${timeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                <span>{lang === "uz" ? timeStatus.statusTextUz : timeStatus.statusTextRu}</span>
+              </span>
             </div>
 
             <BranchHub lang={lang} branches={settings?.branches} />
@@ -529,7 +544,7 @@ export default function HomePage() {
             onAddToCart={handleAddToCart}
             onRefresh={() => {
               let localOrders: Order[] = [];
-              const savedOrders = localStorage.getItem("button_customer_orders");
+              const savedOrders = localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders");
               if (savedOrders) {
                 try {
                   const parsed = JSON.parse(savedOrders);
@@ -539,8 +554,9 @@ export default function HomePage() {
                   }
                 } catch (e) {}
               }
-              const savedCustomer = localStorage.getItem("button_customer");
+              const savedCustomer = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
               const savedPhone =
+                localStorage.getItem("moda_customer_phone") ||
                 localStorage.getItem("button_customer_phone") ||
                 (savedCustomer ? (() => { try { return JSON.parse(savedCustomer)?.phone || null; } catch { return null; } })() : null) ||
                 (localOrders[0]?.customerPhone || null);
@@ -557,7 +573,7 @@ export default function HomePage() {
                         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                       );
                       setCustomerOrders(merged);
-                      localStorage.setItem("button_customer_orders", JSON.stringify(merged));
+                      localStorage.setItem("moda_customer_orders", JSON.stringify(merged));
 
                       // Auto-heal missing orders to server
                       const missingOnServer = localOrders.filter((lo) => !serverOrders.some((so) => so.id === lo.id));
@@ -679,7 +695,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-[#2563EB]" />
                 <h3 className="font-black text-base sm:text-lg text-[#0F172A] dark:text-white">
-                  {lang === "ru" ? "Шоурумы BUTTON Men" : "BUTTON Men Showroomlari"}
+                  {lang === "ru" ? `Шоурумы ${settings?.storeName || "MODA UZ"}` : `${settings?.storeName || "MODA UZ"} Filiallari`}
                 </h3>
               </div>
               <button

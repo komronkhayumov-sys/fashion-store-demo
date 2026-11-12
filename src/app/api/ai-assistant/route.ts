@@ -196,6 +196,8 @@ export async function POST(req: NextRequest) {
     const settings = await getSettings();
     const products = await getProducts();
     const inStockProducts = products.filter((p) => p.isAvailable);
+    const storeName = settings.storeName || "MODA UZ";
+    const storeUpper = storeName.toUpperCase();
 
     const branchesList = settings.branches
       .map((b, i) => `${i + 1}. ${b.name}: ${b.address} (Mo'ljal: ${b.landmark}, Tel: ${b.phone})`)
@@ -221,14 +223,14 @@ Foydalanuvchi siz bilan xuddi insondek erkin suhbatlashadi. Har qanday savolga (
 
 Qoidalaringiz:
 1. Agar bo'y aytsa (masalan bo'yim 196 sm), baland bo'yli erkaklar uchun kiyim tavsiyalarini (XL-2XL, uzun bichimli ko'ylaklar, to'g'ri bichimli jinsi) bering va vaznini so'rang.
-2. Agar rasm generatsiya so'rasa, to'g'ridan-to'g'ri yangi rasm chiza olmasligingizni, lekin BUTTON katalogidagi 20+ turdagi haqiqiy kiyimlar fotosuratlarini va obrazlarini ko'rsatib bera olishingizni ayting.
-3. Agar "qaysi AI" yoki "kim bu" deb so'rasa, Google Gemini generativ modeli asosida ishlovchi BUTTON Men's Wear AI stilisti ekanligingizni ayting.
+2. Agar rasm generatsiya so'rasa, to'g'ridan-to'g'ri yangi rasm chiza olmasligingizni, lekin ${storeName} katalogidagi 20+ turdagi haqiqiy kiyimlar fotosuratlarini va obrazlarini ko'rsatib bera olishingizni ayting.
+3. Agar "qaysi AI" yoki "kim bu" deb so'rasa, Google Gemini generativ modeli asosida ishlovchi ${storeName} AI stilisti ekanligingizni ayting.
 4. Tadbirlar (bazm, to'y, tug'ilgan kun, ofis) uchun do'kondagi kiyimlardan (kardigan, bomber, jinsi, chinos, Oxford ko'ylak, zamsh lofer, krossovka, jiletka) boshdan-oyoq mukammal obraz tuzib bering.
 5. Do'kon ma'lumotlari:
 - Do'kon: ${settings.storeName} (${settings.storeHandle})
 - Filiallar: ${branchesList}
 - Ish vaqti: ${settings.workingHoursUz} (Har kuni 10:00 dan 22:00 gacha).
-- Telefonlar: ${settings.phone1}, ${settings.phone2}. Telegram: @button_uzbekistan, Instagram: @button_uz.
+- Telefonlar: ${settings.phone1}, ${settings.phone2}. Telegram: @modauz_demo, Instagram: @modauz_demo.
 - Yetkazib berish: Toshkent bo'ylab 1-3 soatda (Yandex/BTS), viloyatlarga 1-2 kunda pochta orqali.
 - To'lov: Click, Payme, Uzum, Uzcard, Humo, naqd pul.
 - Mahsulotlar:
@@ -358,7 +360,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("картинк")
     ) {
       reply = isUz
-        ? `Men **BUTTON Men's Wear** matnli sun'iy intellekt maslahatchisiman va to'g'ridan-to'g'ri yangi rasm generatsiya qila (chiza) olmayman 🎨\n\n` +
+        ? `Men **${storeName}** matnli sun'iy intellekt maslahatchisiman va to'g'ridan-to'g'ri yangi rasm generatsiya qila (chiza) olmayman 🎨\n\n` +
           `Lekin men sizga do'konimiz katalogidagi **20+ turdagi haqiqiy kiyimlar, poyabzal va to'liq obrazlarning real fotosuratlarini** ko'rsatib, narxi bilan tavsiya qila olaman!\n\n` +
           `Masalan, quyidagi kiyimlardan birini so'rasangiz, ularning haqiqiy suratini ko'rsataman:\n` +
           `• 🧥 **Yengil bomber kurtka** (420,000 so'm)\n` +
@@ -367,7 +369,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
           `• 👞 **Zamshli loferlar (Loro Piana)** (450,000 so'm)\n` +
           `• 👔 **Oksford paxta ko'ylaklari** (250,000 so'm)\n\n` +
           `Qaysi kiyimimiz fotosurati va ko'rinishini ko'rmoqchisiz?`
-        : `Я текстовый AI-стилист **BUTTON Men's Wear** и не создаю картинки напрямую 🎨\n\n` +
+        : `Я текстовый AI-стилист **${storeName}** и не создаю картинки напрямую 🎨\n\n` +
           `Однако я могу показать вам реальные фотографии товаров из нашего каталога (бомберы, кардиганы, джинсы, лоферы, костюмы) с актуальными ценами и наличием в шоурумах Ташкента! О какой вещи рассказать подробнее?`;
 
     // D. QAYSI AI / QAYSI MODEL / GEMINI / CHATGPT / SUN'IY INTELLEKT
@@ -385,11 +387,11 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
         ? `Do'konimiz tizimiga eng ilg'or **Google Gemini (bepul 1.5-Flash va 2.0-Flash)** generativ sun'iy intellekti to'liq integratsiya qilingan 🤖⚡\n\n` +
           `U qanday ishlaydi?\n` +
           `• Tizim Google Gemini bilan bevosita bog'langan bo'lib, har qanday savolga erkin, jonli va insondek tabiiy javob bera oladi.\n` +
-          `• Shuningdek, tizimga **BUTTON Men's Wear** do'konining barcha 20 ta mahsuloti, narxlar, ranglar nazariyasi va Toshkentdagi 3 ta filial ma'lumotlari kiritilgan.\n\n` +
+          `• Shuningdek, tizimga **${storeName}** do'konining barcha 20 ta mahsuloti, narxlar, ranglar nazariyasi va Toshkentdagi 3 ta filial ma'lumotlari kiritilgan.\n\n` +
           `💡 *Agar sizda Google AI Studio'dan olingan bepul API kalit bo'lsa, uni to'g'ridan-to'g'ri shu chatga yuborishingiz mumkin (masalan: \`AIzaSy...\`) yoki \`/admin\` paneliga kiritishingiz mumkin. Shunda AI to'liq cheksiz jonli generativ rejimda ishlaydi!*\n\n` +
           `Menga kiyimlar, tadbirlar yoki do'konimiz haqida istalgan savolingizni bering, bajonidil javob beraman!`
         : `В наш магазин интегрирован **Google Gemini (1.5-Flash & 2.0-Flash)** — передовой генеративный ИИ от Google 🤖⚡\n\n` +
-          `Он обучен на каталоге BUTTON Men's Wear, правилах подбора мужского стиля и размерах. Вы можете свободно общаться и задавать любые вопросы!`;
+          `Он обучен на каталоге ${storeName}, правилах подбора мужского стиля и размерах. Вы можете свободно общаться и задавать любые вопросы!`;
 
     // E. NIMALAR QILA OLASAN / QOBILIYAT / IMKONIYATLAR / VAZIFANG
     } else if (
@@ -407,7 +409,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("чем можешь помочь")
     ) {
       reply = isUz
-        ? `Men **BUTTON Men's Wear** do'konining shaxsiy sun'iy intellekt (AI) stilist maslahatchisiman 👔🤖\n\n` +
+        ? `Men **${storeName}** do'konining shaxsiy sun'iy intellekt (AI) stilist maslahatchisiman 👔🤖\n\n` +
           `Sizga quyidagi barcha yo'nalishlarda professional darajada yordam bera olaman:\n\n` +
           `• 🥂 **Har qanday tadbirga tayyor Look (obraz) tuzish:**\n` +
           `  Bazm (vecher), to'y, do'stlaringizning tug'ilgan kuni, romantik uchrashuv, ofis yoki kundalik kiyinish uchun do'kondagi kiyimlarimizdan boshdan-oyoq mukammal to'plam tayyorlab beraman.\n\n` +
@@ -415,12 +417,12 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
           `  Qaysi rangdagi shim bilan qanday ko'ylak, kardigan yoki poyabzal yarashishini tahlil qilaman.\n\n` +
           `• 📏 **Bo'y va vaznga qarab aniq o'lcham (razmer) hisoblash:**\n` +
           `  Masalan: *"Bo'yim 180 sm, vaznim 78 kg"* deb yozsangiz, sizga qaysi razmer (M, L, XL yoki shim razmeri) aniq tushishini hisoblab beraman.\n\n` +
-          `• 🛍️ **BUTTON kolleksiyasi va narxlar:**\n` +
+          `• 🛍️ **${storeName} kolleksiyasi va narxlar:**\n` +
           `  Kurtkalar, bomberlar, kardiganlar, jinsi va chinos shimlar, Loro Piana loferlar, krossovkalar va boshqa barcha 20+ turdagi mahsulotlarimiz haqida to'liq ma'lumot beraman.\n\n` +
           `• 📍 **Filiallar va yetkazib berish:**\n` +
           `  Chilonzor, Yunusobod va Sergeli filiallarimiz manzili, ish vaqti hamda Toshkent bo'ylab 1-3 soatlik tezkor dostavka shartlarini tushuntiraman.\n\n` +
           `💡 *Sizga hozir qaysi masala bo'yicha yordam kerak? Masalan, biror tadbirga look tanlaymizmi yoki o'lchamingizni hisoblaymizmi?*`
-        : `Я персональный AI-стилист и консультант бренда **BUTTON Men's Wear** 👔🤖\n\n` +
+        : `Я персональный AI-стилист и консультант бренда **${storeName}** 👔🤖\n\n` +
           `Вот чем я могу вам помочь:\n\n` +
           `• 🥂 **Готовые образы для любых событий:**\n` +
           `  Подбор лука на вечеринку, свадьбу, день рождения, в офис или на каждый день из вещей нашего шоурума.\n\n` +
@@ -491,10 +493,10 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("ты кто")
     ) {
       reply = isUz
-        ? `Men **BUTTON Men's Wear** erkaklar kiyimlari brendi uchun maxsus yaratilgan sun'iy intellekt (AI) stilist maslahatchisiman 🤖👔\n\n` +
+        ? `Men **${storeName}** erkaklar kiyimlari brendi uchun maxsus yaratilgan sun'iy intellekt (AI) stilist maslahatchisiman 🤖👔\n\n` +
           `Men tirik inson emasman, lekin erkaklar modasi, do'kondagi barcha kiyimlar, ranglar uyg'unligi, razmer hisoblash va filiallarimiz bo'yicha professional insondek aniq va tez maslahat bera olaman.\n\n` +
           `Sizga bugun qanday kiyim yoki obraz tanlashda yordam beray?`
-        : `Я персональный искусственный интеллект (AI-стилист), созданный специально для магазина **BUTTON Men's Wear** 🤖👔\n\n` +
+        : `Я персональный искусственный интеллект (AI-стилист), созданный специально для магазина **${storeName}** 🤖👔\n\n` +
           `Я помогаю подобрать гардероб, рассчитать размер по росту и весу, а также ответить на любые вопросы о покупках и доставке!`;
 
     // H. TUG'ILGAN KUN / DO'STLAR YIG'INI
@@ -612,7 +614,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("бомбер")
     ) {
       reply = isUz
-        ? `🧥 **BUTTON Do'konidagi Ustki Kiyimlar Kolleksiyasi:**\n\n` +
+        ? `🧥 **${storeName} Do'konidagi Ustki Kiyimlar Kolleksiyasi:**\n\n` +
           `1. 🧥 **Yengil bahor-kuzgi bomber kurtka** — **420,000 so'm** (O'lchamlar: M, L, XL, 2XL)\n` +
           `   *Shamol va yomg'ir o'tkazmaydigan zamonaviy mato, har qanday kiyim ustidan juda yarashadi.*\n\n` +
           `2. 🧥 **Klassik denim jinsi kurtka** — **410,000 so'm** (O'lchamlar: M, L, XL, 2XL)\n` +
@@ -620,7 +622,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
           `3. 🦺 **Izolyatsiyalangan yengsiz jiletka (Puffer Vest)** — **350,000 so'm** (O'lchamlar: M, L, XL, 2XL)\n` +
           `   *Yengil va issiq, sviter yoki xudi ustidan kiyish uchun ideal.*\n\n` +
           `Barcha kurtkalarni filiallarimizda kiyib ko'rishingiz yoki Toshkent bo'ylab 1-3 soatda yetkazib berishga buyurtma berishingiz mumkin!`
-        : `🧥 **Коллекция курток и верхней одежды BUTTON:**\n\n` +
+        : `🧥 **Коллекция курток и верхней одежды ${storeName}:**\n\n` +
           `1. Бомбер демисезонный **Lightweight Bomber** — 420 000 сум (M–2XL)\n` +
           `2. Классическая джинсовая куртка **Denim Jacket** — 410 000 сум (M–2XL)\n` +
           `3. Утепленный жилет **Puffer Vest** — 350 000 сум (M–2XL)\n\n` +
@@ -638,7 +640,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("брюк")
     ) {
       reply = isUz
-        ? `👖 **BUTTON Erkaklar Shimlari va Jinsilari:**\n\n` +
+        ? `👖 **${storeName} Erkaklar Shimlari va Jinsilari:**\n\n` +
           `1. 👖 **Klassik erkaklar chinos shimi** — **290,000 so'm** (Razmerlar: 30-36)\n` +
           `   *Paxta va elastan aralashmasi, ofis va kundalik smart-casual uchun eng ko'p sotilgan modelimiz.*\n\n` +
           `2. 👖 **Klassik to'g'ri bichimli jinsi shim (Straight Fit)** — **320,000 so'm** (Razmerlar: 29-36)\n` +
@@ -647,7 +649,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
           `   *Yon cho'ntakli, zamonaviy ko'cha (urban) uslubi uchun qulay.*\n\n` +
           `4. 👖 **Klassik jun aralashmali shim (strelkali)** — **310,000 so'm** (Razmerlar: 30-36)\n` +
           `   *Tantanalar, to'y va rasmiy tadbirlar uchun hashamatli variant.*`
-        : `👖 **Мужские брюки и джинсы BUTTON:**\n\n` +
+        : `👖 **Мужские брюки и джинсы ${storeName}:**\n\n` +
           `1. Брюки чинос **Classic Chinos** — 290 000 сум (30–36)\n` +
           `2. Прямые джинсы **Straight Fit** — 320 000 сум (29–36)\n` +
           `3. Брюки карго **Cargo Jogger** — 270 000 сум (29–34)\n` +
@@ -669,14 +671,14 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("лофер")
     ) {
       reply = isUz
-        ? `👞 **BUTTON Premium Poyabzallar To'plami:**\n\n` +
+        ? `👞 **${storeName} Premium Poyabzallar To'plami:**\n\n` +
           `1. 👞 **Zamshli klassik lofer poyabzali (Loro Piana Style)** — **450,000 so'm** (Razmerlar: 39-44)\n` +
           `   *Yumshoq tabiiy zamsh, qulay oq taglik, oyoqni charchatmaydi.*\n\n` +
           `2. 👟 **Oq charm kundalik krossovka** — **390,000 so'm** (Razmerlar: 40-44)\n` +
           `   *Tabiiy charm, har qanday shim va jinsi bilan universal mos tushadi.*\n\n` +
           `3. 🥾 **Tabiiy zamshli chelsi etiklari** — **520,000 so'm** (Razmerlar: 40-44)\n` +
           `   *Salqin havo uchun qulay va hashamatli premium etiklar.*`
-        : `👞 **Мужская обувь BUTTON:**\n\n` +
+        : `👞 **Мужская обувь ${storeName}:**\n\n` +
           `1. Замшевые лоферы **Loro Piana Style** — 450 000 сум (39–44)\n` +
           `2. Белые кожаные кеды Casual — 390 000 сум (40–44)\n` +
           `3. Замшевые ботинки челси — 520 000 сум (40–44).`;
@@ -699,7 +701,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
         .map((b, i) => `${i + 1}. 📍 **${b.name}:** ${b.address}\n   *(Mo'ljal: ${b.landmark}, Tel: ${b.phone})*`)
         .join("\n\n");
       reply = isUz
-        ? `📍 **Toshkent shahridagi BUTTON filiallari:**\n\n${branchesTextUz}\n\n` +
+        ? `📍 **Toshkent shahridagi ${storeName} filiallari:**\n\n${branchesTextUz}\n\n` +
           `⏰ **Ish tartibi:** ${settings.workingHoursUz} (dam olish kunlarisiz, har kuni soat 10:00 dan 22:00 gacha).`
         : `📍 **Наши филиалы в Ташкенте:**\n\n${branchesList}\n\n` +
           `⏰ **Режим работы:** ${settings.workingHoursRu} (без выходных, ежедневно с 10:00 до 22:00).`;
@@ -715,10 +717,10 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       lowerMsg.includes("график")
     ) {
       reply = isUz
-        ? `⏰ **BUTTON Do'konining Ish Vaqti:**\n\n` +
+        ? `⏰ **MODA UZ Do'konining Ish Vaqti:**\n\n` +
           `• Har kuni: **10:00 dan 22:00 gacha**\n` +
           `• Dam olish kunlarisiz uzluksiz ishlaydi (shanba va yakshanba kunlari ham ochiq)!`
-        : `⏰ **График работы BUTTON:**\n\n` +
+        : `⏰ **График работы ${storeName}:**\n\n` +
           `• Ежедневно: **с 10:00 до 22:00** (без выходных).`;
 
     // Q. YETKAZIB BERISH (DOSTAVKA)
@@ -782,9 +784,9 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
       /^(salom|assalom|assalomu alaykum|qalaysiz|qalesiz|qalesan|privet|hi|hello|hayrli kun)\b/i.test(lowerMsg)
     ) {
       reply = isUz
-        ? `Assalomu alaykum! Xush kelibsiz! Men **BUTTON Men's Wear** do'konining shaxsiy stilist maslahatchisiman 👔\n\n` +
+        ? `Assalomu alaykum! Xush kelibsiz! Men **${storeName}** do'konining shaxsiy stilist maslahatchisiman 👔\n\n` +
           `Bugun sizga qanday maslahat yoki kiyim kerak? Masalan, biror tadbirga (to'y, bazm, tug'ilgan kun, ofis) tayyor look tanlaymizmi, bo'y-vazningizga qarab o'lchamingizni hisoblaymizmi yoki do'kondagi kiyimlar haqida ma'lumot beraymi?`
-        : `Здравствуйте! Добро пожаловать! Я персональный AI-стилист **BUTTON Men's Wear** 👔\n\n` +
+        : `Здравствуйте! Добро пожаловать! Я персональный AI-стилист **${storeName}** 👔\n\n` +
           `Чем могу вам помочь? Могу подобрать стильный образ для любого события, рассчитать ваш размер или рассказать о наличии товаров в шоурумах!`;
 
     // U. CONTEXTUAL & INTELLIGENT DYNAMIC FALLBACK
@@ -802,7 +804,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
           : `Совет по сочетанию цветов: базовые тона (белый, черный, темно-синий и бежевый) отлично дополняют друг друга. Напишите, какой цвет или вещь вы хотите скомбинировать!`;
       } else if (hasStyleWord) {
         reply = isUz
-          ? `Siz uchun **BUTTON Men's Wear** kolleksiyasidan 3 xil eng ommabop tayyor obrazni tavsiya qilaman:\n\n` +
+          ? `Siz uchun **${storeName}** kolleksiyasidan 3 xil eng ommabop tayyor obrazni tavsiya qilaman:\n\n` +
             `1. 👔 **Smart-Casual:** Oksford uzun yengli ko'ylak (250,000 so'm) + Klassik chinos shim (290,000 so'm) + Zamshli lofer (450,000 so'm).\n` +
             `2. 🏙️ **Urban Street:** Yengil bomber kurtka (420,000 so'm) + Oversize futbolka (160,000 so'm) + To'g'ri bichimli jinsi (320,000 so'm) + Oq krossovka (390,000 so'm).\n` +
             `3. 🤵 **Tantanali / Rasmiy:** Klassik jun shim (310,000 so'm) + Oq ko'ylak + Zamsh lofer + Charm kamar to'plami (180,000 so'm).\n\n` +
@@ -814,10 +816,10 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
             `Какой стиль вам ближе?`;
       } else {
         reply = isUz
-          ? `Savolingizni tushundim! Men **BUTTON Men's Wear** AI maslahatchisiman.\n\n` +
+          ? `Savolingizni tushundim! Men **${storeName}** AI maslahatchisiman.\n\n` +
             `Sizga erkaklar kiyimlari, ranglar mosligi, o'lcham tanlash (masalan bo'y-vazningizga qarab) yoki do'kondagi 20+ turdagi mahsulotlarimiz (kurtkalar, jinsilar, loferlar, ko'ylaklar) bo'yicha to'liq yordam bera olaman.\n\n` +
             `Menga aynan qanday kiyim yoki tadbir uchun qidirayotganingizni yozsangiz, darhol mukammal tavsiya beraman!`
-          : `Понял ваш вопрос! Я AI-стилист **BUTTON Men's Wear**. Могу подобрать образ, рассчитать размер по росту и весу или рассказать о наличии одежды в шоурумах. Напишите, что именно вас интересует!`;
+          : `Понял ваш вопрос! Я AI-стилист **${storeName}**. Могу подобрать образ, рассчитать размер по росту и весу или рассказать о наличии одежды в шоурумах. Напишите, что именно вас интересует!`;
       }
     }
 

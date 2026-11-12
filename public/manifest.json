@@ -1,7 +1,7 @@
 {
-  "name": "BUTTON Men's Wear",
-  "short_name": "BUTTON",
-  "description": "Premium klassik va zamonaviy erkaklar kiyimlari do'koni",
+  "name": "MODA UZ — Premium Fashion Store",
+  "short_name": "MODA UZ",
+  "description": "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -9,13 +9,13 @@
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "/btn-logo.png",
+      "src": "/moda-logo-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/btn-logo.png",
+      "src": "/moda-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -27,14 +27,14 @@
       "short_name": "Admin",
       "description": "Do'kon buyurtmalarini boshqarish",
       "url": "/admin",
-      "icons": [{ "src": "/btn-logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/moda-logo-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Katalog",
       "short_name": "Katalog",
       "description": "Kiyimlar katalogi",
       "url": "/",
-      "icons": [{ "src": "/btn-logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/moda-logo-192.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["shopping", "lifestyle"]

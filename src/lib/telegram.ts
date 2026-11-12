@@ -33,8 +33,11 @@ export async function sendTelegramOrderNotification(order: Order): Promise<{ suc
     )
     .join("\n\n");
 
+  const storeUpper = (settings.storeName || "MODA UZ").toUpperCase();
+  const storeDisplay = settings.storeName || "MODA UZ";
+
   const message = `
-🛍️ <b>YANGI BUYURTMA — BUTTON.UZ</b>
+🛍️ <b>YANGI BUYURTMA — ${storeUpper}</b>
 ━━━━━━━━━━━━━━━━━━━━
 🆔 <b>Buyurtma ID:</b> <code>#${order.id}</code>
 📅 <b>Vaqt:</b> ${new Date(order.createdAt).toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}
@@ -55,7 +58,7 @@ ${itemsText}
 ━━━━━━━━━━━━━━━━━━━━
 💰 <b>JAMI SUMMA:</b> <b>${formatUzbekCurrency(order.totalAmount)}</b>
 ━━━━━━━━━━━━━━━━━━━━
-<i>BUTTON Men's Wear Smart Mini-Catalog</i>
+<i>${storeDisplay} — Online Demo Platform</i>
 `.trim();
 
   if (!isConfigured) {

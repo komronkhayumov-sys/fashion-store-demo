@@ -17,12 +17,12 @@ const isServerless = Boolean(
 // Determine writable data directory safely
 function getWritableDirectory(): string {
   if (isServerless) {
-    return path.join(os.tmpdir(), "button-data");
+    return path.join(os.tmpdir(), "moda-data");
   }
 
   const cwd = process.cwd();
   if (cwd.startsWith("/var/task") || cwd.startsWith("/var/runtime")) {
-    return path.join(os.tmpdir(), "button-data");
+    return path.join(os.tmpdir(), "moda-data");
   }
 
   const localDir = path.join(cwd, "data");
@@ -35,7 +35,7 @@ function getWritableDirectory(): string {
     fs.unlinkSync(testFile);
     return localDir;
   } catch {
-    return path.join(os.tmpdir(), "button-data");
+    return path.join(os.tmpdir(), "moda-data");
   }
 }
 
@@ -503,7 +503,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
 }
 
 declare global {
-  var __BUTTON_ORDERS__: Order[] | undefined;
+  var __MODA_ORDERS__: Order[] | undefined;
 }
 
 // ------------------- ORDERS STORAGE -------------------
@@ -539,7 +539,7 @@ export async function getOrders(): Promise<Order[]> {
           createdAt: row.created_at,
         }));
         memoryOrders = mapped;
-        globalThis.__BUTTON_ORDERS__ = mapped;
+        globalThis.__MODA_ORDERS__ = mapped;
         return mapped;
       }
     } catch (err) {
@@ -547,8 +547,8 @@ export async function getOrders(): Promise<Order[]> {
     }
   }
 
-  if (globalThis.__BUTTON_ORDERS__ && globalThis.__BUTTON_ORDERS__.length > 0) {
-    memoryOrders = globalThis.__BUTTON_ORDERS__;
+  if (globalThis.__MODA_ORDERS__ && globalThis.__MODA_ORDERS__.length > 0) {
+    memoryOrders = globalThis.__MODA_ORDERS__;
     return memoryOrders;
   }
 
@@ -558,7 +558,7 @@ export async function getOrders(): Promise<Order[]> {
 
   const loaded = safeReadFile<Order[]>(ORDERS_FILE, "orders.json", []);
   memoryOrders = Array.isArray(loaded) ? loaded : [];
-  globalThis.__BUTTON_ORDERS__ = memoryOrders;
+  globalThis.__MODA_ORDERS__ = memoryOrders;
   return memoryOrders;
 }
 
@@ -572,7 +572,7 @@ export async function saveOrder(order: Order): Promise<Order> {
   }
 
   memoryOrders = orders;
-  globalThis.__BUTTON_ORDERS__ = orders;
+  globalThis.__MODA_ORDERS__ = orders;
   safeWriteFile(ORDERS_FILE, memoryOrders);
 
   const supabase = getSupabase();

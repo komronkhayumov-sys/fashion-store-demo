@@ -1,5 +1,5 @@
 -- ==============================================================================
--- BUTTON Men's Wear (button.uz) — Supabase Database Schema
+-- MODA UZ — Premium Fashion Store (modauz.demo) — Supabase Database Schema
 -- Execute this SQL in the Supabase Dashboard -> SQL Editor
 -- ==============================================================================
 

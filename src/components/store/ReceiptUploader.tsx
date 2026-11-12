@@ -158,14 +158,14 @@ export default function ReceiptUploader({
 
       // 4. Update customer's localStorage orders list
       try {
-        const stored = JSON.parse(localStorage.getItem("button_customer_orders") || "[]");
+        const stored = JSON.parse(localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders") || "[]");
         if (Array.isArray(stored)) {
           const updatedList = stored.map((o: any) =>
             o.id === orderId
               ? { ...o, paymentReceipt: uploadedUrl, paymentStatus: "verifying" }
               : o
           );
-          localStorage.setItem("button_customer_orders", JSON.stringify(updatedList));
+          localStorage.setItem("moda_customer_orders", JSON.stringify(updatedList));
         }
       } catch {}
 

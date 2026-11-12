@@ -114,7 +114,7 @@ export const CartModal: React.FC<CartModalProps> = ({
       setErrorMessage("");
       setPaidConfirmed(false);
       try {
-        const saved = localStorage.getItem("button_customer");
+        const saved = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
         if (saved) {
           const c = JSON.parse(saved);
           if (c.name) setCustomerName(c.name);
@@ -143,12 +143,12 @@ export const CartModal: React.FC<CartModalProps> = ({
 
   // Card details from settings
   const card1Number = settings?.cardNumber || "8600 1234 5678 9999";
-  const card1Holder = settings?.cardHolder || "BUTTON MEN WEAR LLC";
+  const card1Holder = settings?.cardHolder || "MODA UZ LLC";
   const card1Bank = settings?.cardBank || "Kapitalbank (Uzcard)";
   const rawCard1 = card1Number.replace(/\s+/g, "");
 
   const card2Number = settings?.card2Number || "9860 1201 3344 7788";
-  const card2Holder = settings?.card2Holder || "BUTTON MEN WEAR LLC";
+  const card2Holder = settings?.card2Holder || "MODA UZ LLC";
   const card2Bank = settings?.card2Bank || "TBC Bank (Humo)";
   const card2Enabled = settings?.card2Enabled ?? false;
   const rawCard2 = card2Number.replace(/\s+/g, "");
@@ -262,24 +262,24 @@ export const CartModal: React.FC<CartModalProps> = ({
         // Direct resilient storage backup so orders are immediately preserved
         if (data.order) {
           try {
-            const rawOrders = localStorage.getItem("button_customer_orders");
+            const rawOrders = localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders");
             const existingOrders: Order[] = rawOrders ? JSON.parse(rawOrders) : [];
             const nextOrders = [data.order, ...existingOrders.filter((o: Order) => o.id !== data.order.id)];
-            localStorage.setItem("button_customer_orders", JSON.stringify(nextOrders));
+            localStorage.setItem("moda_customer_orders", JSON.stringify(nextOrders));
           } catch (e) {}
         }
 
         // Save customer details in localStorage
         try {
-          const existing = localStorage.getItem("button_customer");
+          const existing = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
           const custObj = existing ? JSON.parse(existing) : {};
           custObj.name = customerName;
           custObj.phone = customerPhone;
           if (deliveryType === "delivery" && addressOrNote) {
             custObj.address = addressOrNote;
           }
-          localStorage.setItem("button_customer", JSON.stringify(custObj));
-          localStorage.setItem("button_customer_phone", customerPhone);
+          localStorage.setItem("moda_customer", JSON.stringify(custObj));
+          localStorage.setItem("moda_customer_phone", customerPhone);
         } catch (e) {}
       } else {
         setErrorMessage(data.error || "Xatolik yuz berdi");
@@ -335,8 +335,8 @@ export const CartModal: React.FC<CartModalProps> = ({
                 </h3>
                 <p className="text-xs text-[#9AA6B6] mt-1 max-w-sm mx-auto">
                   {isUz
-                    ? "BUTTON operatori 5 daqiqa ichida siz bilan bog'lanib buyurtmani tasdiqlaydi."
-                    : "Менеджер BUTTON свяжется с вами в течение 5 минут для подтверждения."}
+                    ? `${settings?.storeName || "MODA UZ"} operatori 5 daqiqa ichida siz bilan bog'lanib buyurtmani tasdiqlaydi.`
+                    : `Менеджер ${settings?.storeName || "MODA UZ"} свяжется с вами в течение 5 минут для подтверждения.`}
                 </p>
               </div>
 

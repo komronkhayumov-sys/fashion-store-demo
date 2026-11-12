@@ -210,7 +210,7 @@ export default function SmartSizeCalculator({
           </div>
 
           <p className="text-[11px] text-emerald-400 font-bold">
-            ✓ {calculation.matchRate}% {isRu ? "точность соответствия лекалу BUTTON" : "BUTTON bichimiga to'liq mos keladi"}
+            ✓ {calculation.matchRate}% {isRu ? "точность соответствия лекалу MODA UZ" : "MODA UZ bichimiga to'liq mos keladi"}
           </p>
           <p className="text-[10px] text-zinc-400">
             {isRu

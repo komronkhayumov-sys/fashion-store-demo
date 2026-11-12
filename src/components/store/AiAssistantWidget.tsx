@@ -27,8 +27,8 @@ export const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({ lang }) =>
       sender: "bot",
       text:
         lang === "ru"
-          ? "Здравствуйте! Я AI-консультант BUTTON Men's Wear. Чем могу вам помочь? Вы можете спросить о филиалах, доставке по Ташкенту или подобрать нужный размер!"
-          : "Assalomu alaykum! Men BUTTON Men's Wear do'konining sun'iy intellekt stilistiman. Sizga qanday yordam bera olaman? 4 ta filialimiz, yetkazib berish yoki o'lcham tanlash haqida so'rashingiz mumkin!",
+          ? "Здравствуйте! Я AI-консультант MODA UZ. Чем могу вам помочь? Вы можете спросить о филиалах, доставке по Ташкенту или подобрать нужный размер!"
+          : "Assalomu alaykum! Men MODA UZ do'konining sun'iy intellekt stilistiman. Sizga qanday yordam bera olaman? Filiallarimiz, yetkazib berish yoki o'lcham tanlash haqida so'rashingiz mumkin!",
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
@@ -114,8 +114,8 @@ export const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({ lang }) =>
             sender: "bot",
             text:
               lang === "ru"
-                ? "Извините, произошла ошибка. Пожалуйста, позвоните нам по номеру +998 94 613 55 55."
-                : "Kechirasiz, xatolik yuz berdi. Iltimos, +998 94 613 55 55 raqamiga qo'ng'iroq qiling.",
+                ? "Извините, произошла ошибка. Пожалуйста, позвоните нам по номеру +998 90 123 45 67."
+                : "Kechirasiz, xatolik yuz berdi. Iltimos, +998 90 123 45 67 raqamiga qo'ng'iroq qiling.",
           },
         ]);
       }

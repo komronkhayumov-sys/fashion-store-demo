@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const testMessage = `
-🤖 <b>BUTTON MEN'S WEAR — BOT SINOVI</b>
+🤖 <b>${(settings.storeName || "MODA UZ").toUpperCase()} — BOT SINOVI</b>
 ━━━━━━━━━━━━━━━━━━━━
 ✅ Telegram bot integratsiyasi muvaffaqiyatli ishlamoqda!
 📅 Vaqt: ${new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}

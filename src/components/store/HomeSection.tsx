@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { Customer, Language, Product, StoreSettings } from "@/types";
-import { DEFAULT_SETTINGS, BRANCHES } from "@/constants";
+import { DEFAULT_SETTINGS, BRANCHES, STORE_INSTAGRAM, STORE_TELEGRAM } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
 import { QuickVariationModal } from "./QuickVariationModal";
 import { getStoreTimeStatus } from "@/lib/time";
@@ -61,8 +61,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
 }) => {
   const isUz = lang === "uz";
   const currentSettings = settings || DEFAULT_SETTINGS;
-  const instagramUrl = currentSettings.instagramUrl || "https://www.instagram.com/button_uz/";
-  const telegramUrl = currentSettings.telegramUrl || "https://t.me/button_uz";
+  const instagramUrl = currentSettings.instagramUrl || STORE_INSTAGRAM;
+  const telegramUrl = currentSettings.telegramUrl || STORE_TELEGRAM;
 
   // Category filter state
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -176,8 +176,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
             <div className="relative w-full h-full rounded-full overflow-hidden bg-white dark:bg-[#0f172a] p-[1.5px]">
               <div className="relative w-full h-full rounded-full overflow-hidden bg-[#F8FAFC] dark:bg-[#1e293b]">
                 <Image
-                  src={currentSettings.storeAvatar || "/btn-logo.png"}
-                  alt={currentSettings.storeName || "Button Erkaklar Kiyim Do‘koni"}
+                  src={currentSettings.storeAvatar || "/moda-logo.svg"}
+                  alt={currentSettings.storeName || "MODA UZ"}
                   fill
                   className="object-cover"
                   priority
@@ -194,7 +194,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
           {/* Text Info (Exact Instagram Profile Typography & Info) */}
           <div className="flex-1 min-w-0 space-y-0.5">
             <h1 className="font-black text-base sm:text-lg text-[#0F172A] dark:text-white tracking-tight leading-snug truncate">
-              {(currentSettings.storeName || "BUTTON Men's Wear").replace(/\s*\(\s*button_uz\s*\)/i, "").trim()}
+              {currentSettings.storeName || "MODA UZ"}
             </h1>
 
             <a
@@ -203,14 +203,14 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 dark:text-violet-400 hover:underline cursor-pointer"
             >
-              <span>{currentSettings.storeHandle || "@button_uz"}</span>
+              <span>{currentSettings.storeHandle || "@modauz_demo"}</span>
               <ExternalLink className="w-3 h-3 opacity-70" />
             </a>
 
             <p className="text-xs text-[#64748B] dark:text-slate-400 leading-relaxed line-clamp-1 sm:line-clamp-none">
               {isUz
-                ? (currentSettings.storeBioUz || "Zamonaviy erkaklar kiyimlari, poyabzal va aksessuarlar.")
-                : (currentSettings.storeBioRu || "Стильная мужская одежда, обувь и аксессуары.")}
+                ? (currentSettings.storeBioUz || "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni.")
+                : (currentSettings.storeBioRu || "Современный интернет-магазин одежды и обуви.")}
             </p>
 
             <div className="flex items-center gap-2 text-[11px] text-[#64748B] dark:text-slate-400 font-medium pt-0.5">

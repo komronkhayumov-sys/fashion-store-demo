@@ -1,7 +1,7 @@
 {
-  "name": "BUTTON Admin Panel",
-  "short_name": "BTN Admin",
-  "description": "BUTTON Men's Wear do'koni buyurtmalar va mahsulotlar boshqaruv paneli",
+  "name": "MODA UZ — Boshqaruv Paneli (Admin)",
+  "short_name": "MODA Admin",
+  "description": "MODA UZ do'koni buyurtmalar va mahsulotlar boshqaruv paneli",
   "start_url": "/admin",
   "scope": "/admin",
   "display": "standalone",
@@ -10,13 +10,13 @@
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "/btn-logo.png",
+      "src": "/moda-logo-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/btn-logo.png",
+      "src": "/moda-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

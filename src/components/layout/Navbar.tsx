@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isOpenNow, setIsOpenNow] = useState(true);
   const t = translations[lang];
   const isUz = lang === "uz";
-  const logoSrc = settings?.storeAvatar || "/btn-logo.png";
+  const logoSrc = settings?.storeAvatar || "/moda-logo.svg";
 
   useEffect(() => {
     const checkStatus = () => {
@@ -45,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 60000);
+    const interval = setInterval(checkStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -55,15 +55,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Brand identity */}
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
           <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-md shadow-blue-600/25 shrink-0 border border-blue-400/20 bg-zinc-900 relative">
-            <Image src={logoSrc} alt={settings?.storeName || "BUTTON"} fill className="object-cover" unoptimized priority />
+            <Image src={logoSrc} alt={settings?.storeName || "MODA UZ"} fill className="object-cover" unoptimized priority />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="font-black text-base sm:text-lg tracking-wider text-zinc-950 dark:text-zinc-50 uppercase font-sans">
-                {settings?.storeName ? settings.storeName.split(" ")[0] : "BUTTON"}
+                {settings?.storeName ? settings.storeName.split(" ")[0] : "MODA"}
               </span>
               <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-600 text-white tracking-wider">
-                MEN
+                {settings?.storeName ? settings.storeName.split(" ").slice(1).join(" ") || "UZ" : "UZ"}
               </span>
             </div>
             <div className="flex items-center gap-1.5">

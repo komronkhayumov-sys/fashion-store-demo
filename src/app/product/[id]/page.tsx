@@ -14,12 +14,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!product) {
     return {
-      title: "Mahsulot topilmadi — BUTTON Men's Wear",
+      title: "Mahsulot topilmadi — MODA UZ",
     };
   }
 
-  const title = `${product.name} — BUTTON Men's Wear`;
-  const desc = product.description || "BUTTON Men's Wear kolleksiyasiga mansub premium erkaklar kiyimi.";
+  const title = `${product.name} — MODA UZ`;
+  const desc = product.description || "MODA UZ kolleksiyasiga mansub zamonaviy kiyim va poyabzallar.";
 
   return {
     title,

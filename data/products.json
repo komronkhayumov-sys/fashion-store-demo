@@ -27,7 +27,6 @@
     "description": "Zich va yuqori sifatli 100% paxta matosidan tayyorlangan oversize futbolka. Shaklini yo'qotmaydi.",
     "descriptionRu": "Оверсайз футболка из плотного 100% премиум хлопка. Отлично держит форму после стирок.",
     "price": 160000,
-    "oldPrice": 200000,
     "category": "polos",
     "image": "/products/btn-002.jpg",
     "sizes": [
@@ -37,8 +36,7 @@
       "XL"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Trend",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:05:00Z"
   },
   {
@@ -48,7 +46,6 @@
     "description": "To'g'ri bichimli (Straight Fit) qulay klassik jinsi shim. Yuqori sifatli denim mato, ko'k va qora ranglarda.",
     "descriptionRu": "Прямые классические джинсы из плотного денима. Идеальная посадка, базовые расцветки.",
     "price": 320000,
-    "oldPrice": 390000,
     "category": "pants",
     "image": "/products/btn-003.jpg",
     "sizes": [
@@ -61,8 +58,7 @@
       "36"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Klassika",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:10:00Z"
   },
   {
@@ -85,7 +81,7 @@
     ],
     "isAvailable": true,
     "isFeatured": true,
-    "badge": "Premium",
+    "badge": "Xit",
     "createdAt": "2026-11-08T10:15:00Z"
   },
   {
@@ -105,7 +101,7 @@
       "2XL"
     ],
     "isAvailable": true,
-    "isFeatured": false,
+    "isFeatured": true,
     "badge": "Yangi",
     "createdAt": "2026-11-08T10:20:00Z"
   },
@@ -137,7 +133,6 @@
     "description": "Klassik va qulay chinos shimlari. Paxta va elastan aralashmasi qulay harakatlanishni ta'minlaydi.",
     "descriptionRu": "Классические удобные брюки чинос из хлопка с добавлением эластана.",
     "price": 290000,
-    "oldPrice": 360000,
     "category": "pants",
     "image": "/products/btn-007.jpg",
     "sizes": [
@@ -150,7 +145,6 @@
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Klassika",
     "createdAt": "2026-11-08T10:30:00Z"
   },
   {
@@ -160,7 +154,6 @@
     "description": "Ikki qismli erkaklar sport-casual to'plami (kurtka va shim). Sayohat va kundalik kiyish uchun ideal.",
     "descriptionRu": "Удобный стильный костюм-двойка (куртка и штаны) для активного отдыха и прогулок.",
     "price": 480000,
-    "oldPrice": 590000,
     "category": "suits",
     "image": "/products/btn-008.jpg",
     "sizes": [
@@ -170,8 +163,7 @@
       "2XL"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Top Set",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:35:00Z"
   },
   {
@@ -181,7 +173,6 @@
     "description": "Klassik tugmali yoqaga ega Oksford ko'ylagi. 100% paxta, qulay bichim va dazmollash oson.",
     "descriptionRu": "Классическая хлопковая оксфордская рубашка. Идеальна для делового стиля и джинсов.",
     "price": 250000,
-    "oldPrice": 310000,
     "category": "polos",
     "image": "/products/btn-009.jpg",
     "sizes": [
@@ -193,7 +184,6 @@
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Biznes",
     "createdAt": "2026-11-08T10:40:00Z"
   },
   {
@@ -203,7 +193,6 @@
     "description": "Oq charm krossovkalar — har qanday kiyim bilan mos tushuvchi minimalist universal poyabzal.",
     "descriptionRu": "Универсальные белые кожаные кеды в минималистичном дизайне. Базовый элемент гардероба.",
     "price": 390000,
-    "oldPrice": 480000,
     "category": "shoes",
     "image": "/products/btn-010.jpg",
     "sizes": [
@@ -214,8 +203,7 @@
       "44"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Must Have",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:45:00Z"
   },
   {
@@ -225,7 +213,6 @@
     "description": "Yengil va issiq ushlovchi jiletka. Bahor-kuz mavsumida xudi yoki sviter ustidan kiyish uchun zo'r tanlov.",
     "descriptionRu": "Легкий утепленный мужской жилет. Отлично смотрится поверх худи и свитеров.",
     "price": 350000,
-    "oldPrice": 430000,
     "category": "jackets",
     "image": "/products/btn-011.jpg",
     "sizes": [
@@ -235,8 +222,7 @@
       "2XL"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Trend",
+    "isFeatured": false,
     "createdAt": "2026-11-08T10:50:00Z"
   },
   {
@@ -246,7 +232,6 @@
     "description": "Yarim zamokli yumshoq flis svitshot. Iliq va juda qulay bichim, sovuq kunlar uchun mukammal.",
     "descriptionRu": "Теплый и мягкий флисовый свитшот на молнии. Превосходный комфорт для прохладных дней.",
     "price": 260000,
-    "oldPrice": 320000,
     "category": "hoodies",
     "image": "/products/btn-012.jpg",
     "sizes": [
@@ -257,7 +242,6 @@
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Qulay",
     "createdAt": "2026-11-08T10:55:00Z"
   },
   {
@@ -278,7 +262,7 @@
     ],
     "isAvailable": true,
     "isFeatured": true,
-    "badge": "Yozgi Xit",
+    "badge": "Yangi",
     "createdAt": "2026-11-08T11:00:00Z"
   },
   {
@@ -288,7 +272,6 @@
     "description": "Yon cho'ntakli kargo jogger shimlari. Zamonaviy ko'cha uslubi va baquvvat mato.",
     "descriptionRu": "Стильные брюки карго с накладными карманами и манжетами. Прочная хлопковая ткань.",
     "price": 270000,
-    "oldPrice": 340000,
     "category": "pants",
     "image": "/products/btn-014.jpg",
     "sizes": [
@@ -300,7 +283,6 @@
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Urban",
     "createdAt": "2026-11-08T11:05:00Z"
   },
   {
@@ -310,7 +292,6 @@
     "description": "Dumaloq yoqali asosiy (baza) sviter. Klassik shimlar yoki jinsi bilan a'lo darajada uyg'unlashadi.",
     "descriptionRu": "Базовый свитер с классическим круглым воротом. Отлично сочетается с брюками и джинсами.",
     "price": 230000,
-    "oldPrice": 290000,
     "category": "hoodies",
     "image": "/products/btn-015.jpg",
     "sizes": [
@@ -321,7 +302,6 @@
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Baza",
     "createdAt": "2026-11-08T11:10:00Z"
   },
   {
@@ -331,7 +311,6 @@
     "description": "Tabiiy zamshdan ishlangan Chelsi etiklari. Premium ko'rinish va o'ta qulay qolip.",
     "descriptionRu": "Элегантные мужские ботинки челси из натуральной замши на прочной подошве.",
     "price": 520000,
-    "oldPrice": 650000,
     "category": "shoes",
     "image": "/products/btn-016.jpg",
     "sizes": [
@@ -342,8 +321,7 @@
       "44"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Premium",
+    "isFeatured": false,
     "createdAt": "2026-11-08T11:15:00Z"
   },
   {
@@ -374,7 +352,6 @@
     "description": "Chiziqli qisqa yengli polo ko'ylak. Nafas oluvchi paxta matosi va premium detallar.",
     "descriptionRu": "Стильная рубашка-поло в тонкую полоску. Дышащий хлопок и качественная фурнитура.",
     "price": 195000,
-    "oldPrice": 240000,
     "category": "polos",
     "image": "/products/btn-018.jpg",
     "sizes": [
@@ -385,7 +362,6 @@
     ],
     "isAvailable": true,
     "isFeatured": false,
-    "badge": "Yangi",
     "createdAt": "2026-11-08T11:25:00Z"
   },
   {
@@ -395,7 +371,6 @@
     "description": "Yun aralashmali klassik shim (strelkali). To'g'ri o'tiruvchi bichim, ofis va tantanalar uchun mos.",
     "descriptionRu": "Элегантные классические брюки со стрелками из полушерстяной ткани. Превосходная посадка.",
     "price": 310000,
-    "oldPrice": 380000,
     "category": "pants",
     "image": "/products/btn-019.jpg",
     "sizes": [
@@ -407,8 +382,7 @@
       "36"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Klassika",
+    "isFeatured": false,
     "createdAt": "2026-11-08T11:30:00Z"
   },
   {
@@ -418,15 +392,13 @@
     "description": "Tabiiy charm kamar va minimalist hamyon (kardxolder) to'plami. Sovg'a uchun ideal qadoqda.",
     "descriptionRu": "Стильный мужской набор из натуральной кожи: ремень и компактный картхолдер-кошелек.",
     "price": 180000,
-    "oldPrice": 230000,
     "category": "accessories",
     "image": "/products/btn-020.jpg",
     "sizes": [
       "Standart"
     ],
     "isAvailable": true,
-    "isFeatured": true,
-    "badge": "Sovg'abop",
+    "isFeatured": false,
     "createdAt": "2026-11-08T11:35:00Z"
   }
 ]

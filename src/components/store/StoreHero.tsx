@@ -6,7 +6,7 @@ import { Phone, Send, QrCode, ChevronRight, User, Sparkles, ArrowRight } from "l
 import { InstagramIcon } from "@/components/icons";
 import { Customer, Language, StoreSettings } from "@/types";
 import { translations } from "@/lib/i18n";
-import { DEFAULT_SETTINGS } from "@/constants";
+import { DEFAULT_SETTINGS, STORE_INSTAGRAM, STORE_TELEGRAM } from "@/constants";
 
 interface StoreHeroProps {
   lang: Language;
@@ -33,8 +33,8 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
   const isUz = lang === "uz";
 
   const currentSettings = settings || DEFAULT_SETTINGS;
-  const instagramUrl = currentSettings.instagramUrl || "https://www.instagram.com/button_uz/";
-  const telegramUrl = currentSettings.telegramUrl || "https://t.me/button_uz";
+  const instagramUrl = currentSettings.instagramUrl || STORE_INSTAGRAM;
+  const telegramUrl = currentSettings.telegramUrl || STORE_TELEGRAM;
 
   return (
     <div className="w-full space-y-4 pt-1">
@@ -47,27 +47,27 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
         <div className="relative z-10 max-w-sm sm:max-w-md space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-black uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Kuz-Qish Kolleksiyasi 2026</span>
+            <span>Kolleksiya 2026</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-zinc-950 dark:text-white leading-tight tracking-tight">
             {isUz ? (
               <>
                 Klassik va zamonaviy <br />
-                <span className="text-blue-600 dark:text-blue-400">erkaklar kiyimlari</span>
+                <span className="text-blue-600 dark:text-blue-400">kiyimlar to'plami</span>
               </>
             ) : (
               <>
                 Классическая и стильная <br />
-                <span className="text-blue-600 dark:text-blue-400">мужская одежда</span>
+                <span className="text-blue-600 dark:text-blue-400">коллекция одежды</span>
               </>
             )}
           </h1>
 
           <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
             {isUz
-              ? "Toshkentdagi 4 ta showroom yoki butun O'zbekiston bo'ylab tezkor yetkazib berish xizmati bilan."
-              : "4 шоурума в Ташкенте или быстрая доставка по всему Узбекистану."}
+              ? "Toshkentdagi filiallarimiz yoki butun O'zbekiston bo'ylab tezkor yetkazib berish xizmati bilan."
+              : "Филиалы в Ташкенте или быстрая доставка по всему Узбекистану."}
           </p>
 
           <div className="pt-2 sm:pt-3 flex items-center gap-3">
@@ -85,7 +85,7 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
         <div className="relative z-10 w-28 sm:w-44 md:w-52 aspect-[3/4] shrink-0 overflow-hidden rounded-2xl sm:rounded-3xl shadow-xl border-2 border-white/80 dark:border-zinc-800">
           <Image
             src={currentSettings.storeHeroBanner || "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80"}
-            alt="BUTTON Men's Model"
+            alt="MODA UZ Model"
             fill
             className="object-cover object-top hover:scale-105 transition-transform duration-700"
             priority

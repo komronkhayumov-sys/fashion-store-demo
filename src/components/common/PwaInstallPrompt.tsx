@@ -189,7 +189,7 @@ export default function PwaInstallPrompt({
           className="fixed top-3 left-3 md:top-auto md:bottom-8 md:left-8 z-50 px-3.5 py-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-blue-400/40 animate-scale-in cursor-pointer hover:scale-105 active:scale-95 transition-all"
         >
           <div className="w-5 h-5 rounded-full overflow-hidden relative shrink-0 border border-white/40">
-            <Image src="/btn-logo.png" alt="BUTTON" fill className="object-cover" unoptimized />
+            <Image src="/moda-logo.svg" alt="MODA UZ" fill className="object-cover" unoptimized />
           </div>
           <span>
             {isAdmin
@@ -206,11 +206,11 @@ export default function PwaInstallPrompt({
           <div className="p-3.5 sm:p-4 rounded-3xl bg-slate-900/98 backdrop-blur-xl border border-blue-500/40 text-white shadow-2xl flex items-center justify-between gap-3 ring-1 ring-blue-500/20">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-11 h-11 rounded-2xl overflow-hidden relative shrink-0 border border-blue-400/50 shadow-md bg-black">
-                <Image src="/btn-logo.png" alt="BUTTON" fill className="object-cover" priority unoptimized />
+                <Image src="/moda-logo.svg" alt="MODA UZ" fill className="object-cover" priority unoptimized />
               </div>
               <div className="min-w-0">
                 <h4 className="font-black text-xs sm:text-sm tracking-wide flex items-center gap-1.5 truncate">
-                  <span>{isAdmin ? "BUTTON Admin App" : "BUTTON Men's Wear"}</span>
+                  <span>{isAdmin ? "MODA UZ — Boshqaruv Paneli (Admin)" : "MODA UZ"}</span>
                   <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/30 text-blue-300 border border-blue-400/30">
                     APP
                   </span>
@@ -271,8 +271,8 @@ export default function PwaInstallPrompt({
                 <div>
                   <h3 className="font-black text-sm sm:text-base">
                     {isAdmin
-                      ? isRu ? "Установка BUTTON Admin" : "BUTTON Admin ilovasini o'rnatish"
-                      : isRu ? "Установка BUTTON Men's Wear" : "BUTTON ilovasini o'rnatish"}
+                      ? isRu ? "Установка MODA UZ Admin" : "MODA UZ — Boshqaruv Paneli (Admin) o'rnatish"
+                      : isRu ? "Установка MODA UZ" : "MODA UZ ilovasini o'rnatish"}
                   </h3>
                   <p className="text-[11px] text-zinc-400">
                     {isRu ? "Добавление на рабочий стол телефона" : "Bosh ekranga ilova sifatida o'rnatish"}

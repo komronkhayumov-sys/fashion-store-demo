@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -26,8 +26,16 @@ interface StoreFooterProps {
 export const StoreFooter: React.FC<StoreFooterProps> = ({ lang, settings }) => {
   const isUz = lang === "uz";
   const branches: Branch[] = settings?.branches && settings.branches.length > 0 ? settings.branches : BRANCHES;
-  const timeStatus = getStoreTimeStatus(lang);
+  const [timeStatus, setTimeStatus] = useState(() => getStoreTimeStatus(lang));
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    setTimeStatus(getStoreTimeStatus(lang));
+    const interval = setInterval(() => {
+      setTimeStatus(getStoreTimeStatus(lang));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [lang]);
 
   return (
     <footer className="w-full bg-[#0F172A] text-slate-300 border-t border-slate-800 transition-colors pt-12 pb-28 md:pb-10 font-sans">
@@ -40,8 +48,8 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({ lang, settings }) => {
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl overflow-hidden relative border border-slate-700 bg-black shrink-0 shadow-md">
                 <Image
-                  src={settings?.storeAvatar || "/btn-logo.png"}
-                  alt="BUTTON Men's Wear"
+                  src={settings?.storeAvatar || "/moda-logo.svg"}
+                  alt={settings?.storeName || "MODA UZ"}
                   fill
                   sizes="48px"
                   className="object-cover"
@@ -49,19 +57,21 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({ lang, settings }) => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-black text-lg text-white tracking-tight">BUTTON</h3>
+                  <h3 className="font-black text-lg text-white tracking-tight">
+                    {settings?.storeName ? settings.storeName.split(" ")[0] : "MODA"}
+                  </h3>
                   <span className="bg-violet-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                    MEN
+                    {settings?.storeName ? settings.storeName.split(" ").slice(1).join(" ") || "UZ" : "UZ"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 font-medium">Men's Wear Tashkent</p>
+                <p className="text-xs text-slate-400 font-medium">Online Fashion Store</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed">
               {isUz
-                ? (settings?.storeBioUz || "Zamonaviy erkaklar kiyimlari, poyabzal va aksessuarlar do'koni. Sifat va qulaylik uyg'unligi.")
-                : (settings?.storeBioRu || "Магазин современной мужской одежды, обуви и аксессуаров. Сочетание премиум стиля и комфорта.")}
+                ? (settings?.storeBioUz || "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni. Sifat va universal uslub uyg'unligi.")
+                : (settings?.storeBioRu || "Современный интернет-магазин одежды и обуви. Премиальный стиль и непревзойденный комфорт.")}
             </p>
 
             {/* Live Working Hours Status Badge */}
@@ -202,7 +212,7 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({ lang, settings }) => {
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#229ED9] hover:bg-[#1f8fc4] text-white text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
               >
                 <TelegramIcon className="w-4 h-4 fill-white" />
-                <span>Telegram: @button_uzbekistan</span>
+                <span>Telegram: {settings?.storeHandle || "@modauz_demo"}</span>
               </a>
 
               <a
@@ -227,7 +237,7 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({ lang, settings }) => {
 
         {/* Bottom Bar: Copyright & Attribution */}
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {currentYear} BUTTON Men's Wear. {isUz ? "Barcha huquqlar himoyalangan." : "Все права защищены."}</p>
+          <p>© {currentYear} {settings?.storeName || "MODA UZ"}. {isUz ? "Barcha huquqlar himoyalangan." : "Все права защищены."}</p>
           <div className="flex items-center gap-4">
             <span className="text-[11px]">Toshkent, O'zbekiston</span>
             <span>•</span>

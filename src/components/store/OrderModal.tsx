@@ -82,8 +82,17 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
   const [deliveryRegion, setDeliveryRegion] = useState<"tashkent" | "regions">("tashkent");
   const branches = settings?.branches && settings.branches.length > 0 ? settings.branches : BRANCHES;
-  const [selectedBranchId, setSelectedBranchId] = useState(branches[0]?.id || "beruniy");
+  const [selectedBranchId, setSelectedBranchId] = useState(branches[0]?.id || "markaziy");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("click");
+  const [timeStatus, setTimeStatus] = useState(() => getStoreTimeStatus(lang));
+
+  useEffect(() => {
+    setTimeStatus(getStoreTimeStatus(lang));
+    const timer = setInterval(() => {
+      setTimeStatus(getStoreTimeStatus(lang));
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [lang]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("+998 ");
   const [addressOrNote, setAddressOrNote] = useState("");
@@ -132,7 +141,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
       // Pre-fill customer from localStorage if available
       try {
-        const saved = localStorage.getItem("button_customer");
+        const saved = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
         if (saved) {
           const c = JSON.parse(saved);
           if (c.name) setCustomerName(c.name);
@@ -208,12 +217,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   // Card details from settings
   const card1Number = settings?.cardNumber || "8600 1234 5678 9999";
-  const card1Holder = settings?.cardHolder || "BUTTON MEN WEAR LLC";
+  const card1Holder = settings?.cardHolder || "MODA UZ LLC";
   const card1Bank = settings?.cardBank || "Kapitalbank (Uzcard)";
   const rawCard1 = card1Number.replace(/\s+/g, "");
 
   const card2Number = settings?.card2Number || "9860 1201 3344 7788";
-  const card2Holder = settings?.card2Holder || "BUTTON MEN WEAR LLC";
+  const card2Holder = settings?.card2Holder || "MODA UZ LLC";
   const card2Bank = settings?.card2Bank || "TBC Bank (Humo)";
   const card2Enabled = settings?.card2Enabled ?? false;
   const rawCard2 = card2Number.replace(/\s+/g, "");
@@ -331,24 +340,24 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         // Direct resilient storage backup so orders are immediately preserved
         if (data.order) {
           try {
-            const rawOrders = localStorage.getItem("button_customer_orders");
+            const rawOrders = localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders");
             const existingOrders: Order[] = rawOrders ? JSON.parse(rawOrders) : [];
             const nextOrders = [data.order, ...existingOrders.filter((o: Order) => o.id !== data.order.id)];
-            localStorage.setItem("button_customer_orders", JSON.stringify(nextOrders));
+            localStorage.setItem("moda_customer_orders", JSON.stringify(nextOrders));
           } catch (e) {}
         }
 
         // Save customer details in localStorage
         try {
-          const existing = localStorage.getItem("button_customer");
+          const existing = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
           const custObj = existing ? JSON.parse(existing) : {};
           custObj.name = customerName;
           custObj.phone = customerPhone;
           if (deliveryType === "delivery" && addressOrNote) {
             custObj.address = addressOrNote;
           }
-          localStorage.setItem("button_customer", JSON.stringify(custObj));
-          localStorage.setItem("button_customer_phone", customerPhone);
+          localStorage.setItem("moda_customer", JSON.stringify(custObj));
+          localStorage.setItem("moda_customer_phone", customerPhone);
         } catch (e) {}
       } else {
         setErrorMessage(data.error || "Xatolik yuz berdi");
@@ -728,8 +737,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                         {
                           name: "Alisher Vohidov",
                           date: "2 hafta oldin",
-                          textUz: "Klassik kostyum va ko'ylak kombinatsiyasini to'y marosimi uchun xarid qildim. Hamma qayerdan olganimni so'radi. Rahmat BUTTON jamoasi!",
-                          textRu: "Брал классический комплект на свадьбу. Все спрашивали, где купил. Рекомендую BUTTON!",
+                          textUz: "Klassik kostyum va ko'ylak kombinatsiyasini to'y marosimi uchun xarid qildim. Hamma qayerdan olganimni so'radi. Rahmat MODA UZ jamoasi!",
+                          textRu: "Брал классический комплект на свадьбу. Все спрашивали, где купил. Рекомендую MODA UZ!",
                         },
                       ].map((rev, rIdx) => (
                         <div key={rIdx} className="p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#1e293b] border border-[#E2E8F0] dark:border-slate-700 space-y-1">
@@ -757,9 +766,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                       <span className="font-bold text-[#0F172A] dark:text-white">
                         {isUz ? "Toshkent filiallarida mavjud:" : "Наличие в шоурумах Ташкента:"}
                       </span>
-                      <span className={`text-[10px] font-bold flex items-center gap-1 ${getStoreTimeStatus(lang).isOpen ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${getStoreTimeStatus(lang).isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-                        <span>{isUz ? getStoreTimeStatus(lang).statusTextUz : getStoreTimeStatus(lang).statusTextRu}</span>
+                      <span className={`text-[10px] font-bold flex items-center gap-1 ${timeStatus.isOpen ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${timeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                        <span>{isUz ? timeStatus.statusTextUz : timeStatus.statusTextRu}</span>
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
@@ -940,7 +949,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   <span>{isUz ? "Mahsulot haqida" : "О товаре"}</span>
                 </h4>
                 <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                  {productDesc || "BUTTON Men's Wear premium erkaklar kiyimi. Yuqori sifatli mato va qulay bichim."}
+                  {productDesc || `${settings?.storeName || "MODA UZ"} premium kiyim-kechak va poyabzallar. Yuqori sifatli mato va qulay bichim.`}
                 </p>
                 <div className="pt-1 flex flex-wrap gap-2 text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
                   <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-zinc-200 dark:border-slate-700">

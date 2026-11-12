@@ -74,7 +74,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
       const data = await res.json();
       if (data.success && data.customer) {
         onSaveCustomer(data.customer);
-        localStorage.setItem("button_customer_phone", data.customer.phone);
+        localStorage.setItem("moda_customer_phone", data.customer.phone);
         setSavedSuccess(true);
         setTimeout(() => {
           setSavedSuccess(false);

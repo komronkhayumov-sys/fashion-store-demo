@@ -1,5 +1,5 @@
-// BUTTON Men's Wear Service Worker
-const CACHE_NAME = 'button-cache-v2';
+// MODA UZ Service Worker
+const CACHE_NAME = 'moda-cache-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

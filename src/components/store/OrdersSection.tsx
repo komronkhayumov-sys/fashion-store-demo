@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Language, Order, Product } from "@/types";
 import { formatUzbekCurrency } from "@/lib/format";
+import { STORE_TELEGRAM } from "@/constants";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 
 interface OrdersSectionProps {
@@ -90,7 +91,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
               id: it.productId,
               name: it.productName,
               price: it.price,
-              image: it.image || "/btn-logo.png",
+              image: it.image || "/moda-logo.svg",
               description: "",
               category: "suits",
               sizes: [it.size || "M"],
@@ -289,7 +290,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                               id: it.productId,
                               name: it.productName,
                               price: it.price,
-                              image: it.image || "/btn-logo.png",
+                              image: it.image || "/moda-logo.svg",
                               description: "",
                               category: "suits",
                               sizes: [it.size || "M"],
@@ -443,7 +444,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
             </button>
 
             <a
-              href="https://t.me/button_uz"
+              href={STORE_TELEGRAM}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 py-3 px-4 rounded-2xl bg-[#F1F5F9] dark:bg-[#1e293b] hover:bg-[#E2E8F0] dark:hover:bg-slate-800 text-[#0F172A] dark:text-white font-bold text-xs flex items-center justify-center gap-2 border border-[#E2E8F0] dark:border-slate-800 transition-all"

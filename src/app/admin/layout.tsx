@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "BUTTON Admin — Boshqaruv Paneli",
-  description: "BUTTON Men's Wear do'koni buyurtmalar va mahsulotlar boshqaruv paneli",
+  title: "MODA UZ — Boshqaruv Paneli (Admin)",
+  description: "MODA UZ platformasi buyurtmalar va mahsulotlar boshqaruv paneli",
   manifest: "/manifest-admin.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "BTN Admin",
+    title: "MODA Admin",
   },
   icons: {
-    icon: "/btn-logo.png",
-    apple: "/btn-logo.png",
+    icon: "/moda-logo-192.png",
+    apple: "/moda-logo.svg",
   },
 };
 

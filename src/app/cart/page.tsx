@@ -29,6 +29,7 @@ import { DEFAULT_SETTINGS, BRANCHES } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
+import DemoBanner from "@/components/common/DemoBanner";
 
 export default function CartPage() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export default function CartPage() {
   // Load theme, cart, language, settings, and customer from localStorage / API
   useEffect(() => {
     // Theme sync
-    const savedTheme = localStorage.getItem("button_theme");
+    const savedTheme = localStorage.getItem("moda_theme") || localStorage.getItem("button_theme");
     if (savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"))) {
       setIsDark(true);
       document.documentElement.classList.add("dark");
@@ -78,14 +79,14 @@ export default function CartPage() {
     }
 
     // Language
-    const savedLang = localStorage.getItem("button_lang");
+    const savedLang = localStorage.getItem("moda_lang") || localStorage.getItem("button_lang");
     if (savedLang === "uz" || savedLang === "ru") {
       setLang(savedLang);
     }
 
     // Cart items
     try {
-      const savedCart = localStorage.getItem("button_cart");
+      const savedCart = localStorage.getItem("moda_cart") || localStorage.getItem("button_cart");
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         if (Array.isArray(parsed)) {
@@ -98,7 +99,7 @@ export default function CartPage() {
 
     // Customer info
     try {
-      const savedCustomer = localStorage.getItem("button_customer");
+      const savedCustomer = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
       if (savedCustomer) {
         const c = JSON.parse(savedCustomer);
         if (c.name) setCustomerName(c.name);
@@ -123,7 +124,7 @@ export default function CartPage() {
     const nextTheme = !isDark;
     setIsDark(nextTheme);
     try {
-      localStorage.setItem("button_theme", nextTheme ? "dark" : "light");
+      localStorage.setItem("moda_theme", nextTheme ? "dark" : "light");
       if (nextTheme) {
         document.documentElement.classList.add("dark");
         document.documentElement.setAttribute("data-theme", "dark");
@@ -139,7 +140,7 @@ export default function CartPage() {
   // Save cart changes
   const saveCart = (items: CartItem[]) => {
     setCartItems(items);
-    localStorage.setItem("button_cart", JSON.stringify(items));
+    localStorage.setItem("moda_cart", JSON.stringify(items));
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -194,11 +195,11 @@ export default function CartPage() {
 
   // Payment Cards configuration
   const card1Number = settings?.cardNumber || "8600 1234 5678 9999";
-  const card1Holder = settings?.cardHolder || "BUTTON MEN WEAR LLC";
+  const card1Holder = settings?.cardHolder || "MODA UZ LLC";
   const card1Bank = settings?.cardBank || "Kapitalbank (Uzcard)";
 
   const card2Number = settings?.card2Number || "9860 1201 3344 7788";
-  const card2Holder = settings?.card2Holder || settings?.cardHolder || "BUTTON MEN WEAR LLC";
+  const card2Holder = settings?.card2Holder || settings?.cardHolder || "MODA UZ LLC";
   const card2Bank = settings?.card2Bank || "TBC Bank (Humo)";
   const card2Enabled = Boolean(settings?.card2Enabled && settings?.card2Number);
 
@@ -272,14 +273,14 @@ export default function CartPage() {
       // Save customer to localStorage
       try {
         localStorage.setItem(
-          "button_customer",
+          "moda_customer",
           JSON.stringify({
             name: customerName.trim(),
             phone: customerPhone.trim(),
             address: addressOrNote.trim(),
           })
         );
-        localStorage.setItem("button_customer_phone", customerPhone.trim());
+        localStorage.setItem("moda_customer_phone", customerPhone.trim());
       } catch (err) {}
 
       const branchName =
@@ -323,8 +324,8 @@ export default function CartPage() {
         setOrderSuccess(data.order);
         // Save to customer orders list in localStorage
         try {
-          const prevOrders = JSON.parse(localStorage.getItem("button_customer_orders") || "[]");
-          localStorage.setItem("button_customer_orders", JSON.stringify([data.order, ...prevOrders]));
+          const prevOrders = JSON.parse(localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders") || "[]");
+          localStorage.setItem("moda_customer_orders", JSON.stringify([data.order, ...prevOrders]));
         } catch (e) {}
         // Clear cart
         saveCart([]);
@@ -340,6 +341,9 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-white pb-24 font-sans selection:bg-violet-700 selection:text-white transition-colors">
+      {/* Top Demo Banner */}
+      <DemoBanner lang={lang} />
+
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#E2E8F0] dark:border-slate-800 px-4 sm:px-6 lg:px-8 py-3.5 transition-colors">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -354,10 +358,10 @@ export default function CartPage() {
 
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl overflow-hidden relative border border-violet-500/40">
-              <Image src="/btn-logo.png" alt="BUTTON" fill className="object-cover" unoptimized />
+              <Image src={settings?.storeAvatar || "/moda-logo.svg"} alt={settings?.storeName || "MODA UZ"} fill className="object-cover" unoptimized />
             </div>
             <span className="font-black text-sm tracking-widest text-[#0F172A] dark:text-white">
-              BUTTON MEN
+              {settings?.storeName || "MODA UZ"}
             </span>
           </Link>
 
@@ -368,7 +372,7 @@ export default function CartPage() {
                 type="button"
                 onClick={() => {
                   setLang("uz");
-                  localStorage.setItem("button_lang", "uz");
+                  localStorage.setItem("moda_lang", "uz");
                 }}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                   lang === "uz" ? "bg-violet-700 text-white shadow-xs font-black" : "text-[#64748B] dark:text-slate-400"
@@ -380,7 +384,7 @@ export default function CartPage() {
                 type="button"
                 onClick={() => {
                   setLang("ru");
-                  localStorage.setItem("button_lang", "ru");
+                  localStorage.setItem("moda_lang", "ru");
                 }}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                   lang === "ru" ? "bg-violet-700 text-white shadow-xs font-black" : "text-[#64748B] dark:text-slate-400"

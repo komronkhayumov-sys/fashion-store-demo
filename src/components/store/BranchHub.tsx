@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MapPin,
   Navigation,
@@ -8,17 +8,13 @@ import {
   Clock,
   ExternalLink,
   Wifi,
-  Copy,
-  Check,
-  Store,
-  Compass,
   CheckCircle2,
-  Calendar,
+  Store,
 } from "lucide-react";
 import { Branch, Language, Product } from "@/types";
 import { translations } from "@/lib/i18n";
 import { BRANCHES } from "@/constants";
-import { getStoreTimeStatus } from "@/lib/time";
+import { getStoreTimeStatus, StoreTimeStatus } from "@/lib/time";
 
 interface BranchHubProps {
   lang: Language;
@@ -37,9 +33,19 @@ export const BranchHub: React.FC<BranchHubProps> = ({
   const activeBranches = branches && branches.length > 0 ? branches : BRANCHES;
   const [copiedWifiIndex, setCopiedWifiIndex] = useState<number | null>(null);
   const [reservedBranchId, setReservedBranchId] = useState<string | null>(null);
+  const [timeStatus, setTimeStatus] = useState<StoreTimeStatus>(() => getStoreTimeStatus(lang));
+
+  // Dynamic client hydration for store open/closed status in Tashkent timezone
+  useEffect(() => {
+    setTimeStatus(getStoreTimeStatus(lang));
+    const interval = setInterval(() => {
+      setTimeStatus(getStoreTimeStatus(lang));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [lang]);
 
   const handleCopyWifi = (index: number) => {
-    navigator.clipboard.writeText("button_fashion");
+    navigator.clipboard.writeText("modauz2026");
     setCopiedWifiIndex(index);
     setTimeout(() => setCopiedWifiIndex(null), 2000);
   };
@@ -58,7 +64,7 @@ export const BranchHub: React.FC<BranchHubProps> = ({
         <div>
           <h2 className="text-base sm:text-lg font-black text-[#0F172A] dark:text-white flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#2563EB]" />
-            <span>{isUz ? "Toshkentdagi 4 ta Showroom" : "4 Шоурума в Ташкенте"}</span>
+            <span>{isUz ? "Toshkentdagi Filiallarimiz" : "Шоурумы в Ташкенте"}</span>
           </h2>
           <p className="text-xs text-[#64748B] dark:text-slate-400 mt-0.5">
             {isUz
@@ -67,8 +73,8 @@ export const BranchHub: React.FC<BranchHubProps> = ({
           </p>
         </div>
         <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>{isUz ? "Barcha filiallar ochiq" : "Все филиалы открыты"}</span>
+          <span className={`w-2 h-2 rounded-full ${timeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+          <span>{timeStatus.isOpen ? (isUz ? "Filiallar ochiq" : "Филиалы открыты") : (isUz ? "Hozir yopiq" : "Сейчас закрыто")}</span>
         </span>
       </div>
 
@@ -97,12 +103,12 @@ export const BranchHub: React.FC<BranchHubProps> = ({
                       </h3>
                       <div className="flex items-center gap-2 text-[11px] text-[#64748B] dark:text-slate-400 mt-0.5">
                         <span className="flex items-center gap-1">
-                          <Clock className={`w-3 h-3 ${getStoreTimeStatus(lang).isOpen ? "text-emerald-500" : "text-rose-500"}`} />
+                          <Clock className={`w-3 h-3 ${timeStatus.isOpen ? "text-emerald-500" : "text-rose-500"}`} />
                           <span>{workingHours}</span>
                         </span>
-                        <span className={`w-1.5 h-1.5 rounded-full ${getStoreTimeStatus(lang).isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-                        <span className={`font-bold text-[10px] ${getStoreTimeStatus(lang).isOpen ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                          {getStoreTimeStatus(lang).isOpen
+                        <span className={`w-1.5 h-1.5 rounded-full ${timeStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                        <span className={`font-bold text-[10px] ${timeStatus.isOpen ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                          {timeStatus.isOpen
                             ? isUz ? "Hozir ochiq" : "Открыто"
                             : isUz ? "Hozir yopiq" : "Закрыто"}
                         </span>
@@ -169,7 +175,7 @@ export const BranchHub: React.FC<BranchHubProps> = ({
                 <a
                   href={
                     branch.coordinates
-                      ? `https://3.redirect.appmetrica.yandex.com/route?end-lat=${branch.coordinates.lat}&end-lon=${branch.coordinates.lng}&appmetrica_tracking_id=1178268795219780156&ref=button_uz`
+                      ? `https://3.redirect.appmetrica.yandex.com/route?end-lat=${branch.coordinates.lat}&end-lon=${branch.coordinates.lng}&appmetrica_tracking_id=1178268795219780156&ref=modauz_demo`
                       : branch.yandexMap
                   }
                   target="_blank"

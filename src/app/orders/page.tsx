@@ -21,16 +21,19 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
-import { Language, Order } from "@/types";
+import { Language, Order, StoreSettings } from "@/types";
+import { DEFAULT_SETTINGS } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
+import DemoBanner from "@/components/common/DemoBanner";
 
 export default function CustomerOrdersPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Language>("uz");
   const isRu = lang === "ru";
   const [isDark, setIsDark] = useState<boolean>(false);
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
 
   const [searchPhone, setSearchPhone] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -39,7 +42,7 @@ export default function CustomerOrdersPage() {
 
   // Auto-fill from localStorage & theme sync
   useEffect(() => {
-    const savedTheme = localStorage.getItem("button_theme");
+    const savedTheme = localStorage.getItem("moda_theme") || localStorage.getItem("button_theme");
     if (savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"))) {
       setIsDark(true);
       document.documentElement.classList.add("dark");
@@ -52,6 +55,7 @@ export default function CustomerOrdersPage() {
 
     try {
       const savedPhone =
+        localStorage.getItem("moda_customer_phone") ||
         localStorage.getItem("button_customer_phone") ||
         localStorage.getItem("button_user_phone");
       if (savedPhone) {
@@ -59,6 +63,15 @@ export default function CustomerOrdersPage() {
         fetchOrdersByPhone(savedPhone);
       }
     } catch {}
+
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setSettings(data.settings);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const toggleTheme = () => {
@@ -67,11 +80,11 @@ export default function CustomerOrdersPage() {
     if (next) {
       document.documentElement.classList.add("dark");
       document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("button_theme", "dark");
+      localStorage.setItem("moda_theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
       document.documentElement.setAttribute("data-theme", "light");
-      localStorage.setItem("button_theme", "light");
+      localStorage.setItem("moda_theme", "light");
     }
   };
 
@@ -84,7 +97,7 @@ export default function CustomerOrdersPage() {
     try {
       // Read existing local cached orders
       let localOrders: Order[] = [];
-      const savedOrdersRaw = localStorage.getItem("button_customer_orders");
+      const savedOrdersRaw = localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders");
       if (savedOrdersRaw) {
         try {
           const parsed = JSON.parse(savedOrdersRaw);
@@ -106,8 +119,8 @@ export default function CustomerOrdersPage() {
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         setOrders(merged);
-        localStorage.setItem("button_customer_orders", JSON.stringify(merged));
-        localStorage.setItem("button_customer_phone", phone);
+        localStorage.setItem("moda_customer_orders", JSON.stringify(merged));
+        localStorage.setItem("moda_customer_phone", phone);
 
         // Auto-heal missing orders to server
         const missingOnServer = localOrders.filter((lo) => !serverOrders.some((so) => so.id === lo.id));
@@ -134,7 +147,7 @@ export default function CustomerOrdersPage() {
   // Re-order items
   const handleReorder = (order: Order) => {
     try {
-      const savedCart = localStorage.getItem("button_cart");
+      const savedCart = localStorage.getItem("moda_cart") || localStorage.getItem("button_cart");
       const currentCart = savedCart ? JSON.parse(savedCart) : [];
       const newItems = order.items.map((it) => ({
         id: `${it.productId}-${it.size || "M"}-${it.color || "default"}`,
@@ -143,7 +156,7 @@ export default function CustomerOrdersPage() {
           id: it.productId,
           name: it.productName,
           price: it.price,
-          image: it.image || "/btn-logo.png",
+          image: it.image || "/moda-logo.svg",
           description: "",
           category: "suits",
           sizes: [it.size || "M"],
@@ -154,7 +167,7 @@ export default function CustomerOrdersPage() {
         quantity: it.quantity,
         price: it.price,
       }));
-      localStorage.setItem("button_cart", JSON.stringify([...currentCart, ...newItems]));
+      localStorage.setItem("moda_cart", JSON.stringify([...currentCart, ...newItems]));
       router.push("/");
     } catch {
       router.push("/");
@@ -163,6 +176,9 @@ export default function CustomerOrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0b1120] text-[#0F172A] dark:text-white pb-24 font-sans selection:bg-[#2563EB] selection:text-white transition-colors">
+      {/* Top Demo Banner */}
+      <DemoBanner lang={lang} />
+
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-b border-[#E2E8F0] dark:border-slate-800 px-4 sm:px-6 py-3.5 transition-colors">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -176,9 +192,9 @@ export default function CustomerOrdersPage() {
 
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg overflow-hidden relative border border-[#2563EB]/30">
-              <Image src="/btn-logo.png" alt="BUTTON" fill className="object-cover" unoptimized />
+              <Image src={settings?.storeAvatar || "/moda-logo.svg"} alt={settings?.storeName || "MODA UZ"} fill className="object-cover" unoptimized />
             </div>
-            <span className="font-black text-sm tracking-wider text-[#0F172A] dark:text-white">BUTTON MEN</span>
+            <span className="font-black text-sm tracking-wider text-[#0F172A] dark:text-white">{settings?.storeName || "MODA UZ"}</span>
           </Link>
 
           <div className="flex items-center gap-2">
@@ -416,7 +432,7 @@ export default function CustomerOrdersPage() {
                     </button>
 
                     <a
-                      href="https://t.me/button_admin"
+                      href="https://t.me/modauz_demo"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="py-2.5 px-3 rounded-xl bg-[#F1F5F9] dark:bg-[#1e293b] hover:bg-[#E2E8F0] dark:hover:bg-slate-700 border border-[#E2E8F0] dark:border-slate-700 text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors"

@@ -96,11 +96,11 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
             onClick={() => onSectionChange("katalog")}
             className="flex items-center gap-2 sm:gap-3 group cursor-pointer text-left focus:outline-none"
           >
-            {/* Dynamic Store Logo from Admin or /btn-logo.png */}
+            {/* Dynamic Store Logo from Admin or /moda-logo.svg */}
             <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full overflow-hidden relative shadow-sm shrink-0 border border-slate-200 dark:border-slate-700 bg-black">
               <Image
-                src={settings?.storeAvatar || "/btn-logo.png"}
-                alt={settings?.storeName || "BUTTON"}
+                src={settings?.storeAvatar || "/moda-logo.svg"}
+                alt={settings?.storeName || "MODA UZ"}
                 fill
                 className="object-cover"
                 unoptimized
@@ -110,10 +110,10 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1 sm:gap-1.5 leading-tight">
                 <span className="font-black text-sm sm:text-lg tracking-tight text-[#0F172A] dark:text-white font-sans">
-                  BUTTON
+                  {settings?.storeName ? settings.storeName.split(" ")[0] : "MODA"}
                 </span>
                 <span className="bg-violet-700 text-white font-black text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-xs">
-                  MEN
+                  {settings?.storeName ? settings.storeName.split(" ").slice(1).join(" ") || "UZ" : "UZ"}
                 </span>
               </div>
               <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-[#64748B] dark:text-slate-400 font-medium leading-none mt-0.5">

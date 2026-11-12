@@ -275,7 +275,7 @@ export default function AdminPage() {
       });
       if (res.ok) {
         setIsAuthenticated(true);
-        sessionStorage.setItem("button_admin_pin", pin);
+        sessionStorage.setItem("moda_admin_pin", pin);
         loadData(pin);
       } else {
         setAuthError(lang === "ru" ? "Неверный PIN-код! (По умолчанию: 1234)" : "Noto'g'ri PIN kod! (Standart: 1234)");
@@ -287,22 +287,23 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    sessionStorage.removeItem("moda_admin_pin");
     sessionStorage.removeItem("button_admin_pin");
     setPin("");
   };
 
   // Restore session & language
   useEffect(() => {
-    const savedLang = localStorage.getItem("button_admin_lang") as Language;
+    const savedLang = (localStorage.getItem("moda_admin_lang") || localStorage.getItem("button_admin_lang")) as Language;
     if (savedLang === "uz" || savedLang === "ru") {
       setLang(savedLang);
     }
 
-    const savedPin = sessionStorage.getItem("button_admin_pin");
+    const savedPin = sessionStorage.getItem("moda_admin_pin") || sessionStorage.getItem("button_admin_pin");
     if (savedPin) {
       setPin(savedPin);
       // Pre-load cached orders instantly
-      const cachedRaw = localStorage.getItem("button_admin_orders_cache");
+      const cachedRaw = localStorage.getItem("moda_admin_orders_cache") || localStorage.getItem("button_admin_orders_cache");
       if (cachedRaw) {
         try {
           const parsed = JSON.parse(cachedRaw);
@@ -325,7 +326,7 @@ export default function AdminPage() {
 
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
-    localStorage.setItem("button_admin_lang", newLang);
+    localStorage.setItem("moda_admin_lang", newLang);
   };
 
   const loadData = async (currentPin: string) => {
@@ -350,7 +351,7 @@ export default function AdminPage() {
         // Resilient order caching: Merge server orders with local storage cache so orders NEVER vanish on refresh or cold start
         let cachedOrders: Order[] = [];
         try {
-          const raw = localStorage.getItem("button_admin_orders_cache");
+          const raw = localStorage.getItem("moda_admin_orders_cache") || localStorage.getItem("button_admin_orders_cache");
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) cachedOrders = parsed;
@@ -369,7 +370,7 @@ export default function AdminPage() {
         }
         prevOrdersCountRef.current = mergedOrders.length;
         setOrders(mergedOrders);
-        localStorage.setItem("button_admin_orders_cache", JSON.stringify(mergedOrders));
+        localStorage.setItem("moda_admin_orders_cache", JSON.stringify(mergedOrders));
 
         // Auto-heal: If server was cold-started or missing cached orders, sync back to server via PUT
         const missingOnServer = mergedOrders.filter((m) => !serverOrders.some((s) => s.id === m.id));
@@ -406,7 +407,7 @@ export default function AdminPage() {
             const serverOrders: Order[] = data.orders;
             let cachedOrders: Order[] = [];
             try {
-              const raw = localStorage.getItem("button_admin_orders_cache");
+              const raw = localStorage.getItem("moda_admin_orders_cache") || localStorage.getItem("button_admin_orders_cache");
               if (raw) {
                 const parsed = JSON.parse(raw);
                 if (Array.isArray(parsed)) cachedOrders = parsed;
@@ -425,7 +426,7 @@ export default function AdminPage() {
             }
             prevOrdersCountRef.current = mergedOrders.length;
             setOrders(mergedOrders);
-            localStorage.setItem("button_admin_orders_cache", JSON.stringify(mergedOrders));
+            localStorage.setItem("moda_admin_orders_cache", JSON.stringify(mergedOrders));
 
             const missingOnServer = mergedOrders.filter((m) => !serverOrders.some((s) => s.id === m.id));
             if (missingOnServer.length > 0) {
@@ -489,7 +490,7 @@ export default function AdminPage() {
   };
 
   const handleResetLogo = () => {
-    setProfileForm((prev) => ({ ...prev, storeAvatar: "/btn-logo.png" }));
+    setProfileForm((prev) => ({ ...prev, storeAvatar: "/moda-logo.svg" }));
   };
 
   // Multi-image upload handler (up to 10 images)
@@ -670,7 +671,7 @@ export default function AdminPage() {
       if (data.success) {
         setPinChangeSuccess(lang === "ru" ? "PIN-код успешно изменен!" : "PIN-kod muvaffaqiyatli yangilandi!");
         setPin(newPin);
-        sessionStorage.setItem("button_admin_pin", newPin);
+        sessionStorage.setItem("moda_admin_pin", newPin);
         setNewPin("");
         setConfirmPin("");
       } else {
@@ -796,7 +797,7 @@ export default function AdminPage() {
         setOrders((prev) => {
           const next = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
           try {
-            localStorage.setItem("button_admin_orders_cache", JSON.stringify(next));
+            localStorage.setItem("moda_admin_orders_cache", JSON.stringify(next));
           } catch {}
           return next;
         });
@@ -827,7 +828,7 @@ export default function AdminPage() {
               : o
           );
           try {
-            localStorage.setItem("button_admin_orders_cache", JSON.stringify(next));
+            localStorage.setItem("moda_admin_orders_cache", JSON.stringify(next));
           } catch {}
           return next;
         });
@@ -1002,11 +1003,11 @@ export default function AdminPage() {
         <div className={`w-full max-w-sm rounded-3xl p-6 sm:p-8 space-y-6 border shadow-2xl ${isDark ? "bg-[#150f28] border-purple-900/40 text-white" : "bg-white border-purple-200 text-zinc-900"}`}>
           <div className="text-center space-y-2">
             <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-xl shadow-purple-600/30 mx-auto shrink-0 border border-purple-400/30">
-              <Image src="/btn-logo.png" alt="BUTTON" width={64} height={64} className="w-full h-full object-cover" priority />
+              <Image src="/moda-logo.svg" alt="MODA UZ" width={64} height={64} className="w-full h-full object-cover" priority />
             </div>
-            <h1 className="text-xl font-black tracking-wider uppercase">BUTTON MEN</h1>
+            <h1 className="text-xl font-black tracking-wider uppercase">MODA UZ</h1>
             <p className={`text-xs ${subTextClass}`}>
-              {lang === "ru" ? "Панель управления магазином" : "Do'kon boshqaruv paneli"}
+              {lang === "ru" ? "MODA UZ — Панель управления (Admin)" : "MODA UZ — Boshqaruv Paneli (Admin)"}
             </p>
           </div>
 
@@ -1036,9 +1037,16 @@ export default function AdminPage() {
                   {showLoginPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-zinc-400 mt-1 text-center">
-                {lang === "ru" ? "Стандартный PIN: 1234" : "Standart PIN: 1234"}
-              </p>
+              <div className="mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => setPin("1234")}
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-blue-500/15 to-violet-500/15 border border-amber-500/30 hover:border-amber-400 text-amber-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs font-bold shadow-xs active:scale-98"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>{lang === "ru" ? "✨ Демо PIN-код: 1234 (Нажмите)" : "✨ Demo kirish kodi (PIN): 1234 (Bosing)"}</span>
+                </button>
+              </div>
             </div>
 
             {authError && (
@@ -1133,16 +1141,8 @@ export default function AdminPage() {
 
             <div className="w-8 h-8 rounded-xl overflow-hidden relative border border-blue-500/30 shrink-0">
               <Image
-                src={profileForm.storeAvatar || settings.storeAvatar || "/btn-logo.png"}
-                alt="BUTTON"
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-            <div>
-              <h1 className={`font-black text-xs tracking-wider uppercase ${headingTextClass}`}>BUTTON</h1>
-              <p className="text-[9px] text-zinc-400 font-medium tracking-wide">Men's Wear</p>
+                src={profileForm.storeAvatar || settings.storeAvatar || "/moda-logo.svg"}
+                alt="MODA UZ" fill className="object-cover" unoptimized /> </div> <div> <h1 className={`font-black text-xs tracking-wider uppercase ${headingTextClass}`}>{settings.storeName || "MODA UZ"}</h1> <p className="text-[9px] text-zinc-400 font-medium tracking-wide">Boshqaruv Paneli (Admin)</p>
             </div>
           </div>
 
@@ -1231,7 +1231,7 @@ export default function AdminPage() {
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-md border border-blue-500/30 relative bg-zinc-900">
                     <Image
-                      src={profileForm.storeAvatar || settings.storeAvatar || "/btn-logo.png"}
+                      src={profileForm.storeAvatar || settings.storeAvatar || "/moda-logo.svg"}
                       alt="Logo"
                       fill
                       className="object-cover"
@@ -1240,9 +1240,9 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <h2 className={`font-black text-xs uppercase tracking-wider ${headingTextClass}`}>
-                      {settings.storeName ? settings.storeName.split(" ")[0] : "BUTTON"}
+                      {settings.storeName || "MODA UZ"}
                     </h2>
-                    <p className="text-[9px] text-zinc-400 font-medium">Boshqaruv menyusi</p>
+                    <p className="text-[9px] text-zinc-400 font-medium">Boshqaruv Paneli (Admin)</p>
                   </div>
                 </div>
 
@@ -1421,7 +1421,7 @@ export default function AdminPage() {
                       {settings.adminName || "Admin"}
                     </span>
                     <span className="block text-[10px] text-zinc-400 leading-tight truncate">
-                      {settings.adminEmail || "admin@button.uz"}
+                      {settings.adminEmail || "admin@modauz.demo"}
                     </span>
                   </div>
                 </div>
@@ -1474,7 +1474,7 @@ export default function AdminPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-md border border-purple-400/20 bg-zinc-900 relative">
                 <Image
-                  src={profileForm.storeAvatar || settings.storeAvatar || "/btn-logo.png"}
+                  src={profileForm.storeAvatar || settings.storeAvatar || "/moda-logo.svg"}
                   alt="Logo"
                   fill
                   className="object-cover"
@@ -1484,10 +1484,10 @@ export default function AdminPage() {
               </div>
               <div>
                 <h1 className={`font-black text-sm tracking-widest uppercase ${headingTextClass}`}>
-                  {settings.storeName ? settings.storeName.split(" ")[0] : "BUTTON"}
+                  {settings.storeName || "MODA UZ"}
                 </h1>
                 <p className="text-[10px] text-zinc-400 font-medium tracking-wider">
-                  {settings.storeName ? settings.storeName.split(" ").slice(1).join(" ") || "Men's Wear" : "Men's Wear"}
+                  Boshqaruv Paneli (Admin)
                 </p>
               </div>
             </div>
@@ -1703,7 +1703,7 @@ export default function AdminPage() {
                   {settings.adminName || "Admin"}
                 </span>
                 <span className="block text-[10px] text-zinc-400 leading-tight truncate">
-                  {settings.adminEmail || "admin@button.uz"}
+                  {settings.adminEmail || "admin@modauz.demo"}
                 </span>
               </div>
             </div>
@@ -2187,7 +2187,7 @@ export default function AdminPage() {
                       </div>
                       <span className={`font-mono font-bold text-[11px] ${
                         isDark ? "text-zinc-100" : "text-slate-900"
-                      }`}>{settings.wifiSsid || "BUTTON_GUEST"}</span>
+                      }`}>{settings.wifiSsid || "MODA_GUEST"}</span>
                     </div>
                   </div>
                 </div>
@@ -3149,7 +3149,7 @@ export default function AdminPage() {
                     <span>Bizning Maxsus Taklif: AI Retail & Auditoriya Audit Xizmati ($100)</span>
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                    BUTTON VIP Retail Intelligence — Auditoriya Tahlili & Zaxira Boshqaruvi
+                    MODA UZ VIP Retail Intelligence — Auditoriya Tahlili & Zaxira Boshqaruvi
                   </h3>
                   <p className="text-xs text-purple-200/90 leading-relaxed">
                     Mijozlar qaysi o'lchamdagi kiyimlarni ko'proq xarid qilmoqda, Instagram reklama uchun eng daromadli auditoriya va xaridorlarni qayta xaridga (LTV) qaytarish strategiyasi.
@@ -3354,7 +3354,7 @@ export default function AdminPage() {
 
                   <div className="flex justify-between items-start relative z-10">
                     <div>
-                      <span className="font-black text-xs tracking-widest block">BUTTON MEN</span>
+                      <span className="font-black text-xs tracking-widest block">MODA UZ</span>
                       <span className="text-[9px] font-bold text-amber-400 tracking-wider">1-KARTA (ASOSIY)</span>
                     </div>
                     <span className="text-[10px] font-mono text-purple-200 font-bold uppercase truncate max-w-[130px]">
@@ -3381,7 +3381,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="flex justify-between text-[10px] font-mono text-zinc-300 uppercase">
-                      <span className="truncate max-w-[170px]">{profileForm.cardHolder || "BUTTON MEN WEAR LLC"}</span>
+                      <span className="truncate max-w-[170px]">{profileForm.cardHolder || "MODA UZ LLC"}</span>
                       <span className="font-bold text-blue-300">UZCARD</span>
                     </div>
                   </div>
@@ -3414,7 +3414,7 @@ export default function AdminPage() {
                       required
                       value={profileForm.cardHolder || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, cardHolder: e.target.value.toUpperCase() })}
-                      placeholder="BUTTON MEN WEAR LLC"
+                      placeholder="MODA UZ LLC"
                       className={`w-full px-4 py-2.5 rounded-xl text-xs uppercase font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 ${inputBgClass}`}
                     />
                   </div>
@@ -3476,7 +3476,7 @@ export default function AdminPage() {
 
                   <div className="flex justify-between items-start relative z-10">
                     <div>
-                      <span className="font-black text-xs tracking-widest block">BUTTON MEN</span>
+                      <span className="font-black text-xs tracking-widest block">MODA UZ</span>
                       <span className="text-[9px] font-bold text-emerald-400 tracking-wider">2-KARTA (ZAXIRA)</span>
                     </div>
                     <span className="text-[10px] font-mono text-emerald-200 font-bold uppercase truncate max-w-[130px]">
@@ -3503,7 +3503,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="flex justify-between text-[10px] font-mono text-zinc-300 uppercase">
-                      <span className="truncate max-w-[170px]">{profileForm.card2Holder || "BUTTON MEN WEAR LLC"}</span>
+                      <span className="truncate max-w-[170px]">{profileForm.card2Holder || "MODA UZ LLC"}</span>
                       <span className="font-bold text-emerald-300">HUMO / VISA</span>
                     </div>
                   </div>
@@ -3534,7 +3534,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.card2Holder || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, card2Holder: e.target.value.toUpperCase() })}
-                      placeholder="BUTTON MEN WEAR LLC"
+                      placeholder="MODA UZ LLC"
                       className={`w-full px-4 py-2.5 rounded-xl text-xs uppercase font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 ${inputBgClass}`}
                     />
                   </div>
@@ -4047,7 +4047,7 @@ export default function AdminPage() {
                     <div className="flex flex-col items-center gap-1">
                       <div className="w-20 h-20 rounded-2xl bg-zinc-950 border border-blue-500/40 p-2 flex items-center justify-center relative overflow-hidden shadow-lg">
                         <Image
-                          src={profileForm.storeAvatar || settings.storeAvatar || "/btn-logo.png"}
+                          src={profileForm.storeAvatar || settings.storeAvatar || "/moda-logo.svg"}
                           alt="Brand Logo Dark Preview"
                           fill
                           className="object-contain p-1.5"
@@ -4061,7 +4061,7 @@ export default function AdminPage() {
                     <div className="flex flex-col items-center gap-1">
                       <div className="w-20 h-20 rounded-2xl bg-white border border-blue-200 p-2 flex items-center justify-center relative overflow-hidden shadow-md">
                         <Image
-                          src={profileForm.storeAvatar || settings.storeAvatar || "/btn-logo.png"}
+                          src={profileForm.storeAvatar || settings.storeAvatar || "/moda-logo.svg"}
                           alt="Brand Logo Light Preview"
                           fill
                           className="object-contain p-1.5"
@@ -4121,7 +4121,7 @@ export default function AdminPage() {
                         type="text"
                         value={profileForm.storeAvatar || ""}
                         onChange={(e) => setProfileForm({ ...profileForm, storeAvatar: e.target.value })}
-                        placeholder="https://... yoki /btn-logo.png"
+                        placeholder="https://... yoki /moda-logo.svg"
                         className={`w-full px-3.5 py-2 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${inputBgClass}`}
                       />
                       <p className="text-[10px] text-zinc-400 mt-1">
@@ -4155,7 +4155,7 @@ export default function AdminPage() {
                       type="email"
                       value={profileForm.adminEmail || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, adminEmail: e.target.value })}
-                      placeholder="admin@button.uz"
+                      placeholder="admin@modauz.demo"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4175,7 +4175,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.storeName || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, storeName: e.target.value })}
-                      placeholder="BUTTON Men's Wear"
+                      placeholder="MODA UZ"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4185,7 +4185,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.storeHandle || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, storeHandle: e.target.value })}
-                      placeholder="@button_uz"
+                      placeholder="@modauz_demo"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4195,7 +4195,7 @@ export default function AdminPage() {
                       type="url"
                       value={profileForm.instagramUrl || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, instagramUrl: e.target.value })}
-                      placeholder="https://www.instagram.com/button_uz/"
+                      placeholder="https://www.instagram.com/modauz_demo/"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4205,7 +4205,7 @@ export default function AdminPage() {
                       type="url"
                       value={profileForm.telegramUrl || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, telegramUrl: e.target.value })}
-                      placeholder="https://t.me/button_uz"
+                      placeholder="https://t.me/modauz_demo"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4215,7 +4215,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.phone1 || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, phone1: e.target.value })}
-                      placeholder="+998 94 613 55 55"
+                      placeholder="+998 90 123 45 67"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4225,7 +4225,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.phone2 || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, phone2: e.target.value })}
-                      placeholder="+998 99 613 55 55"
+                      placeholder="+998 91 123 45 67"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4264,7 +4264,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.wifiSsid || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, wifiSsid: e.target.value })}
-                      placeholder="BUTTON_GUEST"
+                      placeholder="MODA_GUEST"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4274,7 +4274,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.wifiPassword || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, wifiPassword: e.target.value })}
-                      placeholder="buttonmenswear"
+                      placeholder="modauz2026"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -4984,7 +4984,7 @@ export default function AdminPage() {
                           name: it.productName,
                           price: it.price,
                           image: resolvedImage || "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
-                          description: "BUTTON Men's Wear kolleksiyasiga mansub premium klassik va zamonaviy erkaklar kiyimi.",
+                          description: "MODA UZ kolleksiyasiga mansub premium klassik va zamonaviy erkaklar kiyimi.",
                           sizes: [it.size || "M", "48", "50", "52"],
                           colors: [resolvedColor, "Qora", "To'q ko'k"],
                           category: "suits",
@@ -5209,7 +5209,7 @@ export default function AdminPage() {
                   <h3 className={`font-black text-sm sm:text-base ${headingTextClass}`}>
                     Buyurtma qilingan kiyim ma'lumotlari
                   </h3>
-                  <span className={`text-[11px] ${subTextClass}`}>BUTTON Men's Wear katalogi</span>
+                  <span className={`text-[11px] ${subTextClass}`}>MODA UZ katalogi</span>
                 </div>
               </div>
               <button
@@ -5530,7 +5530,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <h3 className={`font-black text-base sm:text-lg ${headingTextClass}`}>
-                    BUTTON VIP Retail Intelligence ($100 Servis)
+                    MODA UZ VIP Retail Intelligence ($100 Servis)
                   </h3>
                   <p className={`text-xs ${subTextClass}`}>
                     AI tahliliy hisoboti: auditoriya talabi, optimal zaxira va daromadni oshirish

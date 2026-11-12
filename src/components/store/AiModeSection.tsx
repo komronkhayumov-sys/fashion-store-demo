@@ -54,8 +54,10 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const storeDisplayName = settings?.storeName || "MODA UZ";
+
   const initialGreetingUz =
-    `Assalomu alaykum! Men **BUTTON Men's Wear** shaxsiy AI stilisti va do'kon maslahatchisiman 👔\n\n` +
+    `Assalomu alaykum! Men **${storeDisplayName}** shaxsiy AI stilisti va do'kon maslahatchisiman 👔\n\n` +
     `Mendan quyidagi barcha masalalar bo'yicha erkin so'rashingiz mumkin:\n` +
     `• 🤵 **Kiyinish uslubi va obrazlar:** To'y, tantana, ofis, romantik uchrashuv yoki kundalik kiyinish bo'yicha maslahat\n` +
     `• 🎨 **Ranglar uyg'unligi:** Shim, ko'ylak, kurtka va poyabzallarni bir-biriga moslash\n` +
@@ -64,7 +66,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
     `Sizga qanday kiyim yoki maslahat kerak? Quyidagi tayyor savollardan birini tanlashingiz yoki o'zingiz yozishingiz mumkin!`;
 
   const initialGreetingRu =
-    `Здравствуйте! Я персональный AI-стилист и консультант **BUTTON Men's Wear** 👔\n\n` +
+    `Здравствуйте! Я персональный AI-стилист и консультант **${storeDisplayName}** 👔\n\n` +
     `Вы можете задать мне любые вопросы:\n` +
     `• 🤵 **Стиль и готовые образы:** Подбор одежды на свадьбу, в офис, на свидание или на каждый день\n` +
     `• 🎨 **Цветовые сочетания:** Гармония верха, низа, обуви и аксессуаров\n` +
@@ -201,7 +203,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
 
       const localGeminiKey =
         typeof window !== "undefined"
-          ? localStorage.getItem("button_gemini_api_key") || settings?.geminiApiKey || ""
+          ? localStorage.getItem("moda_gemini_api_key") || localStorage.getItem("button_gemini_api_key") || settings?.geminiApiKey || ""
           : settings?.geminiApiKey || "";
 
       const res = await fetch("/api/ai-assistant", {
@@ -218,7 +220,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
 
       const data = await res.json();
       if (data.savedApiKey && typeof window !== "undefined") {
-        localStorage.setItem("button_gemini_api_key", data.savedApiKey);
+        localStorage.setItem("moda_gemini_api_key", data.savedApiKey);
       }
       const replyText =
         data.reply ||
@@ -242,8 +244,8 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
         id: `bot-err-${Date.now()}`,
         sender: "bot",
         text: isUz
-          ? "Aloqada vaqtinchalik uzilish yuz berdi. Iltimos, qaytadan urinib ko'ring yoki filiallarimizga qo'ng'iroq qiling (+998 94 613 55 55)."
-          : "Временная ошибка связи. Пожалуйста, попробуйте еще раз или свяжитесь с нами по телефону (+998 94 613 55 55).",
+          ? `Aloqada vaqtinchalik uzilish yuz berdi. Iltimos, qaytadan urinib ko'ring yoki filiallarimizga qo'ng'iroq qiling (${settings?.phone1 || "+998 90 123 45 67"}).`
+          : `Временная ошибка связи. Пожалуйста, попробуйте еще раз или свяжитесь с нами по телефону (${settings?.phone1 || "+998 90 123 45 67"}).`,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setChatMessages((prev) => [...prev, errorMsg]);
@@ -314,7 +316,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-300 text-xs font-bold tracking-wide">
               <Sparkles className="w-3.5 h-3.5 text-violet-300 animate-spin" style={{ animationDuration: "6s" }} />
-              <span>BUTTON AI STYLIST & CONSULTANT</span>
+              <span>{storeDisplayName.toUpperCase()} AI STYLIST & CONSULTANT</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
             </div>
 
