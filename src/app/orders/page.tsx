@@ -59,7 +59,7 @@ export default function CustomerOrdersPage() {
         } catch {}
       }
 
-      const res = await fetch(`/api/orders?phone=${encodeURIComponent(phone)}`);
+      const res = await fetch(`/api/orders?phone=${encodeURIComponent(phone)}`, { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.orders)) {
         const serverOrders: Order[] = data.orders;
@@ -114,7 +114,7 @@ export default function CustomerOrdersPage() {
       }
     } catch {}
 
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.settings) {

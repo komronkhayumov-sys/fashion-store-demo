@@ -3,7 +3,9 @@ import path from "path";
 import os from "os";
 import { Customer, CustomerMeasurements, Order, Product, StoreSettings } from "@/types";
 import { DEFAULT_SETTINGS, INITIAL_PRODUCTS } from "@/constants";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+
+export { isSupabaseConfigured };
 
 // Detect serverless environment (Vercel, AWS Lambda, Netlify, etc.)
 const isServerless = Boolean(
@@ -121,6 +123,24 @@ export async function getSettings(): Promise<StoreSettings> {
         memorySettings = loaded;
         return loaded;
       }
+
+      // If settings row does not exist in Supabase yet, auto-seed it with initial settings
+      const initialSettings: StoreSettings = {
+        ...DEFAULT_SETTINGS,
+        adminPin: process.env.ADMIN_PIN || DEFAULT_SETTINGS.adminPin,
+      };
+      const stored = safeReadFile<StoreSettings>(SETTINGS_FILE, "settings.json", initialSettings);
+      const seedSettings: StoreSettings = {
+        ...initialSettings,
+        ...(stored || {}),
+      };
+      await supabase.from("settings").upsert({
+        id: "store_settings",
+        data: seedSettings,
+        updated_at: new Date().toISOString(),
+      });
+      memorySettings = seedSettings;
+      return seedSettings;
     } catch (err) {
       console.warn("[storage] Supabase getSettings error:", err);
     }

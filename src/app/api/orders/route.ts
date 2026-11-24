@@ -3,6 +3,15 @@ import { getOrders, saveOrder, updateOrder, verifyPin } from "@/lib/storage";
 import { sendTelegramOrderNotification, sendTelegramReceiptNotification } from "@/lib/telegram";
 import { Order } from "@/types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+
 export async function GET(req: NextRequest) {
   const phone = req.nextUrl.searchParams.get("phone");
   const orderId = req.nextUrl.searchParams.get("id");
@@ -16,10 +25,10 @@ export async function GET(req: NextRequest) {
         const cleanOrderPhone = (o.customerPhone || "").replace(/\D/g, "");
         return cleanOrderPhone.endsWith(cleanSearchPhone.slice(-9)) || cleanSearchPhone.endsWith(cleanOrderPhone.slice(-9));
       });
-      return NextResponse.json({ success: true, orders: filtered });
+      return NextResponse.json({ success: true, orders: filtered }, { headers: NO_CACHE_HEADERS });
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+      return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
     }
   }
 
@@ -29,27 +38,27 @@ export async function GET(req: NextRequest) {
       const allOrders = await getOrders();
       const found = allOrders.find((o) => o.id === orderId);
       if (!found) {
-        return NextResponse.json({ success: false, error: "Buyurtma topilmadi" }, { status: 404 });
+        return NextResponse.json({ success: false, error: "Buyurtma topilmadi" }, { status: 404, headers: NO_CACHE_HEADERS });
       }
-      return NextResponse.json({ success: true, order: found });
+      return NextResponse.json({ success: true, order: found }, { headers: NO_CACHE_HEADERS });
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+      return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
     }
   }
 
   // Otherwise, require Admin PIN
   const pinHeader = req.headers.get("x-admin-pin") || "";
   if (!(await verifyPin(pinHeader))) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401, headers: NO_CACHE_HEADERS });
   }
 
   try {
     const orders = await getOrders();
-    return NextResponse.json({ success: true, orders });
+    return NextResponse.json({ success: true, orders }, { headers: NO_CACHE_HEADERS });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 

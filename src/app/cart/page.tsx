@@ -107,12 +107,23 @@ export default function CartPage() {
       }
     } catch (e) {}
 
-    // Settings
-    fetch("/api/settings")
+    // Settings with cache-first hydration
+    try {
+      const cachedSett = localStorage.getItem("moda_store_settings_cache") || localStorage.getItem("moda_admin_settings_cache");
+      if (cachedSett) {
+        const parsed = JSON.parse(cachedSett);
+        if (parsed && typeof parsed === "object") setSettings(parsed);
+      }
+    } catch {}
+
+    fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.settings) {
           setSettings(data.settings);
+          try {
+            localStorage.setItem("moda_store_settings_cache", JSON.stringify(data.settings));
+          } catch {}
         }
       })
       .catch(() => {})

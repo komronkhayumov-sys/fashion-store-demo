@@ -37,7 +37,7 @@ export default function HomePage() {
   const [activeSection, setActiveSection] = useState<CustomerNavSection>("katalog");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Products and Settings from API
+  // Products and Settings from API with local cache fallback
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [settings, setSettings] = useState<StoreSettings | null>(DEFAULT_SETTINGS);
 
@@ -83,28 +83,51 @@ export default function HomePage() {
     setToast({ isVisible: true, message, type });
   };
 
-  // Load products, settings, wishlist, cart, customer on mount
+  // Load products, settings, wishlist, cart, customer on mount & on window focus
   useEffect(() => {
+    // 0. Instant hydration from cached store settings if available
+    try {
+      const cachedSett = localStorage.getItem("moda_store_settings_cache") || localStorage.getItem("moda_admin_settings_cache");
+      if (cachedSett) {
+        const parsed = JSON.parse(cachedSett);
+        if (parsed && typeof parsed === "object") setSettings(parsed);
+      }
+      const cachedProds = localStorage.getItem("moda_store_products_cache") || localStorage.getItem("moda_admin_products_cache");
+      if (cachedProds) {
+        const parsedP = JSON.parse(cachedProds);
+        if (Array.isArray(parsedP) && parsedP.length > 0) setProducts(parsedP);
+      }
+    } catch {}
+
     async function loadData() {
       try {
         const [prodRes, settRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/settings"),
+          fetch("/api/products", { cache: "no-store" }),
+          fetch("/api/settings", { cache: "no-store" }),
         ]);
         const prodData = await prodRes.json();
         const settData = await settRes.json();
 
         if (prodData.success && Array.isArray(prodData.products) && prodData.products.length > 0) {
           setProducts(prodData.products);
+          try {
+            localStorage.setItem("moda_store_products_cache", JSON.stringify(prodData.products));
+          } catch {}
         }
         if (settData.success && settData.settings) {
           setSettings(settData.settings);
+          try {
+            localStorage.setItem("moda_store_settings_cache", JSON.stringify(settData.settings));
+          } catch {}
         }
       } catch (e) {
         console.error("Could not fetch remote data, using local defaults:", e);
       }
     }
     loadData();
+
+    // Re-sync when switching back to this tab (e.g. after updating settings in /admin)
+    window.addEventListener("focus", loadData);
 
     // Load language preference
     const savedLang = localStorage.getItem("moda_lang") || localStorage.getItem("button_lang");
@@ -184,7 +207,7 @@ export default function HomePage() {
       try {
         localStorage.setItem("moda_customer_phone", savedPhone);
       } catch {}
-      fetch(`/api/orders?phone=${encodeURIComponent(savedPhone)}`)
+      fetch(`/api/orders?phone=${encodeURIComponent(savedPhone)}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           if (data.success && Array.isArray(data.orders)) {
@@ -211,6 +234,10 @@ export default function HomePage() {
         })
         .catch(() => {});
     }
+
+    return () => {
+      window.removeEventListener("focus", loadData);
+    };
   }, []);
 
   // Wishlist toggle handler

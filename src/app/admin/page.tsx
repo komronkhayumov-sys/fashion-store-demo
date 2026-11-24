@@ -57,6 +57,8 @@ import {
   Download,
   Sparkles,
   Tag,
+  Database,
+  AlertTriangle,
 } from "lucide-react";
 import { Branch, Customer, Language, Order, PaymentMethod, Product, StoreSettings } from "@/types";
 import { CATEGORIES, DEFAULT_SETTINGS } from "@/constants";
@@ -83,6 +85,8 @@ export default function AdminPage() {
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
+  const [isDatabaseConnected, setIsDatabaseConnected] = useState<boolean | null>(null);
+  const [showDbGuideModal, setShowDbGuideModal] = useState(false);
 
   // Product Add/Edit Modal
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -261,10 +265,10 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const [prodRes, orderRes, settRes, custRes] = await Promise.all([
-        fetch("/api/products"),
-        fetch("/api/orders", { headers: { "x-admin-pin": currentPin } }),
-        fetch("/api/settings", { headers: { "x-admin-pin": currentPin } }),
-        fetch("/api/customers", { headers: { "x-admin-pin": currentPin } }),
+        fetch("/api/products", { cache: "no-store" }),
+        fetch("/api/orders", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
+        fetch("/api/settings", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
+        fetch("/api/customers", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
       ]);
 
       const prodData = await prodRes.json();
@@ -272,7 +276,38 @@ export default function AdminPage() {
       const settData = await settRes.json();
       const custData = await custRes.json();
 
-      if (prodData.success) setProducts(prodData.products);
+      if (prodData.success && Array.isArray(prodData.products)) {
+        let cachedProducts: Product[] = [];
+        try {
+          const raw = localStorage.getItem("moda_admin_products_cache");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) cachedProducts = parsed;
+          }
+        } catch {}
+
+        const prodMap = new Map<string, Product>();
+        cachedProducts.forEach((p) => prodMap.set(p.id, p));
+        prodData.products.forEach((p: Product) => prodMap.set(p.id, p));
+        const mergedProducts = Array.from(prodMap.values());
+        setProducts(mergedProducts);
+        try {
+          localStorage.setItem("moda_admin_products_cache", JSON.stringify(mergedProducts));
+          localStorage.setItem("moda_store_products_cache", JSON.stringify(mergedProducts));
+        } catch {}
+
+        // Auto-heal missing products if server had a cold start
+        const missingOnServer = mergedProducts.filter((mp) => !prodData.products.some((sp: Product) => sp.id === mp.id));
+        if (missingOnServer.length > 0) {
+          missingOnServer.forEach((mp) => {
+            fetch("/api/products", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
+              body: JSON.stringify(mp),
+            }).catch(() => {});
+          });
+        }
+      }
       if (orderData.success) {
         const serverOrders: Order[] = Array.isArray(orderData.orders) ? orderData.orders : [];
 
@@ -311,8 +346,41 @@ export default function AdminPage() {
         }
       }
       if (settData.success && settData.settings) {
-        setSettings(settData.settings);
-        setProfileForm(settData.settings);
+        if (settData.isDatabaseConnected !== undefined) {
+          setIsDatabaseConnected(Boolean(settData.isDatabaseConnected));
+        }
+
+        let cachedSettings: Partial<StoreSettings> | null = null;
+        try {
+          const raw = localStorage.getItem("moda_admin_settings_cache");
+          if (raw) cachedSettings = JSON.parse(raw);
+        } catch {}
+
+        const mergedSettings: StoreSettings = {
+          ...settData.settings,
+          ...(cachedSettings || {}),
+        };
+
+        setSettings(mergedSettings);
+        setProfileForm(mergedSettings);
+        try {
+          localStorage.setItem("moda_admin_settings_cache", JSON.stringify(mergedSettings));
+          localStorage.setItem("moda_store_settings_cache", JSON.stringify(mergedSettings));
+        } catch {}
+
+        // If server cold started without database and lost custom settings, auto-heal sync back
+        if (cachedSettings && Object.keys(cachedSettings).length > 0) {
+          const hasCustomChange = Object.entries(cachedSettings).some(
+            ([k, v]) => v !== undefined && JSON.stringify(v) !== JSON.stringify((settData.settings as Record<string, unknown>)[k])
+          );
+          if (hasCustomChange) {
+            fetch("/api/settings", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
+              body: JSON.stringify(cachedSettings),
+            }).catch(() => {});
+          }
+        }
       }
       if (custData.success && Array.isArray(custData.customers)) {
         setCustomers(custData.customers);
@@ -593,6 +661,13 @@ export default function AdminPage() {
       if (data.success) {
         setSettings(data.settings);
         setProfileForm(data.settings);
+        if (data.isDatabaseConnected !== undefined) {
+          setIsDatabaseConnected(Boolean(data.isDatabaseConnected));
+        }
+        try {
+          localStorage.setItem("moda_admin_settings_cache", JSON.stringify(data.settings));
+          localStorage.setItem("moda_store_settings_cache", JSON.stringify(data.settings));
+        } catch {}
         setSaveSuccessMsg(lang === "ru" ? "Успешно сохранено!" : "Muvaffaqiyatli saqlandi!");
         setTimeout(() => setSaveSuccessMsg(""), 3500);
       } else {
@@ -732,6 +807,16 @@ export default function AdminPage() {
       if (data.success) {
         setIsProductModalOpen(false);
         setEditingProduct(null);
+        if (data.product) {
+          setProducts((prev) => {
+            const next = [data.product, ...prev.filter((p) => p.id !== data.product.id)];
+            try {
+              localStorage.setItem("moda_admin_products_cache", JSON.stringify(next));
+              localStorage.setItem("moda_store_products_cache", JSON.stringify(next));
+            } catch {}
+            return next;
+          });
+        }
         loadData(pin);
       } else {
         alert(data.error || "Xatolik");
@@ -751,7 +836,17 @@ export default function AdminPage() {
         headers: { "x-admin-pin": pin },
       });
       const data = await res.json();
-      if (data.success) loadData(pin);
+      if (data.success) {
+        setProducts((prev) => {
+          const next = prev.filter((p) => p.id !== id);
+          try {
+            localStorage.setItem("moda_admin_products_cache", JSON.stringify(next));
+            localStorage.setItem("moda_store_products_cache", JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+        loadData(pin);
+      }
     } catch (err) {
       alert("Tarmoq xatosi");
     }
@@ -765,7 +860,17 @@ export default function AdminPage() {
         body: JSON.stringify({ id: product.id, isAvailable: !product.isAvailable }),
       });
       const data = await res.json();
-      if (data.success) loadData(pin);
+      if (data.success) {
+        setProducts((prev) => {
+          const next = prev.map((p) => (p.id === product.id ? { ...p, isAvailable: !product.isAvailable } : p));
+          try {
+            localStorage.setItem("moda_admin_products_cache", JSON.stringify(next));
+            localStorage.setItem("moda_store_products_cache", JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+        loadData(pin);
+      }
     } catch (err) {}
   };
 
@@ -1893,6 +1998,49 @@ export default function AdminPage() {
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{saveSuccessMsg}</span>
+          </div>
+        )}
+
+        {/* Database Connection Status Alert Banner */}
+        {isDatabaseConnected === false && (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in shadow-xs">
+            <div className="flex items-start sm:items-center gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+              <div>
+                <p className="font-bold text-amber-200">
+                  {lang === "ru" ? "База данных Supabase не подключена" : "Supabase ma'lumotlar bazasi ulanmagan"}
+                </p>
+                <p className="text-[11px] text-amber-300/80">
+                  {lang === "ru"
+                    ? "Изменения сохраняются в памяти сервера. Для постоянного сохранения данных на Vercel подключите бесплатную базу Supabase."
+                    : "O'zgarishlar vaqtinchalik xotirada saqlanmoqda. Vercel serverless-da doimiy saqlash uchun bepul Supabase bazasini ulab qo'ying."}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDbGuideModal(true)}
+              className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-200 font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer shadow-xs active:scale-98"
+            >
+              <Database className="w-3.5 h-3.5 text-amber-400" />
+              <span>{lang === "ru" ? "Инструкция подключения" : "Bazani ulash yo'riqnomasi"}</span>
+            </button>
+          </div>
+        )}
+
+        {isDatabaseConnected === true && (
+          <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center justify-between gap-2 shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>
+                {lang === "ru"
+                  ? "База данных Supabase подключена: данные синхронизируются в реальном времени."
+                  : "Supabase ma'lumotlar bazasi faol ulangan: ma'lumotlar bulutda doimiy saqlanmoqda."}
+              </span>
+            </div>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+              Live Cloud DB
+            </span>
           </div>
         )}
 
@@ -5811,6 +5959,121 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      {/* Supabase Database Connection Guide Modal */}
+      {showDbGuideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl p-5 sm:p-7 overflow-y-auto max-h-[92vh] space-y-5 ${isDark ? "bg-[#141226] border-purple-900/50 text-white" : "bg-white border-purple-200 text-zinc-900"}`}>
+            {/* Modal Header */}
+            <div className={`flex items-start justify-between border-b pb-4 ${isDark ? "border-purple-950/60" : "border-zinc-200"}`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base sm:text-lg">
+                    {lang === "ru" ? "Подключение постоянной базы данных Supabase" : "Supabase Ma'lumotlar Bazasini Ulash"}
+                  </h3>
+                  <p className={`text-xs ${subTextClass}`}>
+                    {lang === "ru"
+                      ? "Сохраняйте все товары, заказы и настройки навсегда в облаке Vercel"
+                      : "Barcha tovarlar, buyurtmalar va sozlamalar Vercel serverlarida abadiy saqlanadi"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDbGuideModal(false)}
+                className="w-8 h-8 rounded-full bg-zinc-700/20 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Explanation box */}
+            <div className={`p-4 rounded-2xl border text-xs leading-relaxed space-y-1.5 ${isDark ? "bg-blue-950/20 border-blue-900/30 text-blue-200" : "bg-blue-50/70 border-blue-200 text-blue-900"}`}>
+              <p className="font-bold flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
+                <span>Nega bu kerak?</span>
+              </p>
+              <p>
+                Vercel platformasi serverless arxitekturasida ishlaydi (har safar server qayta ishga tushganda vaqtinchalik xotira tozalanadi). Ma&apos;lumotlar doimiy va bir vaqtning o&apos;zida barcha foydalanuvchilarda (guest va admin) darhol yangilanib turishi uchun bepul <strong>Supabase</strong> bulutli bazasidan foydalaniladi.
+              </p>
+            </div>
+
+            {/* Steps list */}
+            <div className="space-y-4 text-xs">
+              {/* Step 1 */}
+              <div className={`p-4 rounded-2xl border space-y-2 ${itemCardBg}`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-blue-400 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black">1</span>
+                    Supabase-da bepul loyiha oching
+                  </span>
+                  <a
+                    href="https://supabase.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <span>supabase.com</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+                <p className={subTextClass}>
+                  Supabase saytida bepul ro&apos;yxatdan o&apos;tib, yangi loyiha yarating. Loyiha yaratilgach, <strong>Project Settings</strong> &rarr; <strong>API</strong> sahifasidan <code>Project URL</code> va <code>anon public key</code> ni nusxalab oling.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className={`p-4 rounded-2xl border space-y-2 ${itemCardBg}`}>
+                <span className="font-bold text-sm text-blue-400 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black">2</span>
+                  SQL jadvallarni ishga tushiring
+                </span>
+                <p className={subTextClass}>
+                  Supabase panelining chap menyusidan <strong>SQL Editor</strong> bo&apos;limiga kiring. Loyihangizdagi <code>supabase/schema.sql</code> fayli ichidagi barcha kodni SQL Editor ga tashlab, <strong>Run</strong> tugmasini bosing. Jadvallar va birlamchi mahsulotlar avtomatik shakllanadi.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className={`p-4 rounded-2xl border space-y-2.5 ${itemCardBg}`}>
+                <span className="font-bold text-sm text-blue-400 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black">3</span>
+                  Vercel Environment Variables ga qo&apos;shing
+                </span>
+                <p className={subTextClass}>
+                  Vercel loyihangiz boshqaruv panelida <strong>Settings</strong> &rarr; <strong>Environment Variables</strong> bo&apos;limiga kiring va quyidagi 2 ta kalitni qo&apos;shing:
+                </p>
+                <div className="space-y-1.5 font-mono text-[11px]">
+                  <div className={`p-2.5 rounded-xl border flex items-center justify-between ${isDark ? "bg-black/40 border-purple-900/30 text-emerald-400" : "bg-zinc-100 border-zinc-200 text-emerald-700"}`}>
+                    <span>NEXT_PUBLIC_SUPABASE_URL</span>
+                    <span className="text-zinc-500 text-[10px] font-sans">https://...supabase.co</span>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border flex items-center justify-between ${isDark ? "bg-black/40 border-purple-900/30 text-emerald-400" : "bg-zinc-100 border-zinc-200 text-emerald-700"}`}>
+                    <span>NEXT_PUBLIC_SUPABASE_ANON_KEY</span>
+                    <span className="text-zinc-500 text-[10px] font-sans">eyJhbGciOi...</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-amber-400/90 font-medium">
+                  💡 Kalitlarni kiritgach, Vercel Deployments bo&apos;limida <strong>Redeploy</strong> tugmasini bir marta bossangiz kifoya.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className={`flex justify-end pt-3 border-t ${isDark ? "border-purple-950/60" : "border-zinc-200"}`}>
+              <button
+                type="button"
+                onClick={() => setShowDbGuideModal(false)}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95"
+              >
+                {lang === "ru" ? "Понятно, закрыть" : "Tushundim, yopish"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PWA Admin Install Prompt */}
       <PwaInstallPrompt lang={lang} target="admin" />

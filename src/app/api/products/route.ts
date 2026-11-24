@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteProduct, getProducts, saveProduct, verifyPin } from "@/lib/storage";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -22,70 +31,70 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json({ success: true, products }, { headers: NO_CACHE_HEADERS });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
 export async function POST(req: NextRequest) {
   const pinHeader = req.headers.get("x-admin-pin") || "";
   if (!(await verifyPin(pinHeader))) {
-    return NextResponse.json({ success: false, error: "Noto'g'ri PIN kod (Unauthorized)" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Noto'g'ri PIN kod (Unauthorized)" }, { status: 401, headers: NO_CACHE_HEADERS });
   }
 
   try {
     const body = await req.json();
     if (!body.name || !body.price) {
-      return NextResponse.json({ success: false, error: "Mahsulot nomi va narxi kiritilishi shart" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Mahsulot nomi va narxi kiritilishi shart" }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     const saved = await saveProduct(body);
-    return NextResponse.json({ success: true, product: saved });
+    return NextResponse.json({ success: true, product: saved }, { headers: NO_CACHE_HEADERS });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
 export async function PUT(req: NextRequest) {
   const pinHeader = req.headers.get("x-admin-pin") || "";
   if (!(await verifyPin(pinHeader))) {
-    return NextResponse.json({ success: false, error: "Noto'g'ri PIN kod (Unauthorized)" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Noto'g'ri PIN kod (Unauthorized)" }, { status: 401, headers: NO_CACHE_HEADERS });
   }
 
   try {
     const body = await req.json();
     if (!body.id) {
-      return NextResponse.json({ success: false, error: "Mahsulot IDsi ko'rsatilmagan" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Mahsulot IDsi ko'rsatilmagan" }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     const updated = await saveProduct(body);
-    return NextResponse.json({ success: true, product: updated });
+    return NextResponse.json({ success: true, product: updated }, { headers: NO_CACHE_HEADERS });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
 export async function DELETE(req: NextRequest) {
   const pinHeader = req.headers.get("x-admin-pin") || "";
   if (!(await verifyPin(pinHeader))) {
-    return NextResponse.json({ success: false, error: "Noto'g'ri PIN kod (Unauthorized)" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Noto'g'ri PIN kod (Unauthorized)" }, { status: 401, headers: NO_CACHE_HEADERS });
   }
 
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {
-      return NextResponse.json({ success: false, error: "Mahsulot IDsi ko'rsatilmagan" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Mahsulot IDsi ko'rsatilmagan" }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     const deleted = await deleteProduct(id);
-    return NextResponse.json({ success: deleted });
+    return NextResponse.json({ success: deleted }, { headers: NO_CACHE_HEADERS });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }

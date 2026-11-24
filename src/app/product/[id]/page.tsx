@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { getProductById, getProducts, getSettings } from "@/lib/storage";
 import ProductDetailClient from "./ProductDetailClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ id: string }>;
 }
