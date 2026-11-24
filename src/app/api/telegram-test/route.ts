@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: false,
         error: "Telegram Bot Token yoki Chat ID kiritilmagan. Iltimos, ikkala maydonni ham to'ldiring.",
-      });
+      }, { status: 400 });
     }
 
     const testMessage = `
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         text: testMessage,
         parse_mode: "HTML",
       }),
+      signal: AbortSignal.timeout(8000),
     });
 
     const resData = await res.json();
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: false,
         error: `Telegram xatosi: ${resData.description || "Noma'lum xatolik"}`,
-      });
+      }, { status: 502 });
     }
 
     return NextResponse.json({

@@ -88,7 +88,6 @@ export const CartModal: React.FC<CartModalProps> = ({
   const [cardCopied, setCardCopied] = useState(false);
   const [card2Copied, setCard2Copied] = useState(false);
   const [activeCardTab, setActiveCardTab] = useState<"card1" | "card2">("card1");
-  const [paidConfirmed, setPaidConfirmed] = useState(false);
 
   // Countdown timer for scarcity (30 mins)
   const [timeLeft, setTimeLeft] = useState(28 * 60 + 45);
@@ -112,7 +111,6 @@ export const CartModal: React.FC<CartModalProps> = ({
     if (isOpen) {
       setOrderSuccessId(null);
       setErrorMessage("");
-      setPaidConfirmed(false);
       try {
         const saved = localStorage.getItem("moda_customer") || localStorage.getItem("button_customer");
         if (saved) {
@@ -437,7 +435,6 @@ export const CartModal: React.FC<CartModalProps> = ({
                   <ReceiptUploader
                     orderId={orderSuccessId}
                     lang={lang}
-                    onUploaded={() => setPaidConfirmed(true)}
                   />
                 </div>
               </div>

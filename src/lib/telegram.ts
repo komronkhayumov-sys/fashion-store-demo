@@ -4,6 +4,14 @@ import { formatUzbekCurrency } from "./format";
 
 export { formatUzbekCurrency };
 
+export function escapeHtml(text: string): string {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 export async function sendTelegramOrderNotification(order: Order): Promise<{ success: boolean; simulated?: boolean; error?: string }> {
   const settings = await getSettings();
 
@@ -14,8 +22,8 @@ export async function sendTelegramOrderNotification(order: Order): Promise<{ suc
 
   const deliveryText =
     order.deliveryType === "delivery"
-      ? `🚚 <b>Yetkazib berish (Toshkent bo'ylab)</b>\n📍 Manzil: ${order.address || "Ko'rsatilmadi"}`
-      : `🏬 <b>Filialdan olib ketish / Bron</b>\n🏢 Filial: <b>${order.branchName || order.branchId || "Tanlanmagan"}</b>`;
+      ? `🚚 <b>Yetkazib berish (Toshkent bo'ylab)</b>\n📍 Manzil: ${escapeHtml(order.address || "Ko'rsatilmadi")}`
+      : `🏬 <b>Filialdan olib ketish / Bron</b>\n🏢 Filial: <b>${escapeHtml(order.branchName || order.branchId || "Tanlanmagan")}</b>`;
 
   const paymentText =
     order.paymentMethod === "click"
@@ -29,21 +37,21 @@ export async function sendTelegramOrderNotification(order: Order): Promise<{ suc
   const itemsText = order.items
     .map(
       (item, idx) =>
-        `${idx + 1}. <b>${item.productName}</b>\n   • O'lcham: <code>${item.size || "Standart"}</code>\n   • Soni: ${item.quantity} dona\n   • Narxi: ${formatUzbekCurrency(item.price)}`
+        `${idx + 1}. <b>${escapeHtml(item.productName)}</b>\n   • O'lcham: <code>${escapeHtml(item.size || "Standart")}</code>\n   • Soni: ${item.quantity} dona\n   • Narxi: ${formatUzbekCurrency(item.price)}`
     )
     .join("\n\n");
 
-  const storeUpper = (settings.storeName || "MODA UZ").toUpperCase();
-  const storeDisplay = settings.storeName || "MODA UZ";
+  const storeUpper = escapeHtml((settings.storeName || "MODA UZ").toUpperCase());
+  const storeDisplay = escapeHtml(settings.storeName || "MODA UZ");
 
   const message = `
 🛍️ <b>YANGI BUYURTMA — ${storeUpper}</b>
 ━━━━━━━━━━━━━━━━━━━━
-🆔 <b>Buyurtma ID:</b> <code>#${order.id}</code>
+🆔 <b>Buyurtma ID:</b> <code>#${escapeHtml(order.id)}</code>
 📅 <b>Vaqt:</b> ${new Date(order.createdAt).toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}
 
-👤 <b>Mijoz:</b> <b>${order.customerName}</b>
-📞 <b>Telefon:</b> <a href="tel:${order.customerPhone}">${order.customerPhone}</a>
+👤 <b>Mijoz:</b> <b>${escapeHtml(order.customerName)}</b>
+📞 <b>Telefon:</b> <a href="tel:${order.customerPhone}">${escapeHtml(order.customerPhone)}</a>
 
 📦 <b>Yetkazish turi:</b>
 ${deliveryText}
@@ -51,7 +59,7 @@ ${deliveryText}
 💳 <b>To'lov turi:</b>
 ${paymentText} (${order.paymentStatus === "paid" ? "✅ To'langan" : "⏳ Kutilmoqda"})
 
-${order.comment ? `💬 <b>Izoh:</b> <i>${order.comment}</i>\n` : ""}
+${order.comment ? `💬 <b>Izoh:</b> <i>${escapeHtml(order.comment)}</i>\n` : ""}
 📋 <b>Mahsulotlar:</b>
 ${itemsText}
 
@@ -77,6 +85,7 @@ ${itemsText}
         parse_mode: "HTML",
         disable_web_page_preview: true,
       }),
+      signal: AbortSignal.timeout(5000),
     });
 
     const data = await res.json();
@@ -109,7 +118,7 @@ export async function sendTelegramReceiptNotification(
     const caption = `
 📸 <b>YANGI TO'LOV CHEKI / SKRINSHOT KELDI!</b>
 ━━━━━━━━━━━━━━━━━━━━
-🆔 <b>Buyurtma ID:</b> <code>#${orderId}</code>
+🆔 <b>Buyurtma ID:</b> <code>#${escapeHtml(orderId)}</code>
 📅 <b>Vaqt:</b> ${new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}
 ⚡ <i>Xaridor to'lovni tasdiqlash uchun chek skrinshotini yukladi. Admin paneldan tekshirishingiz mumkin!</i>
 ━━━━━━━━━━━━━━━━━━━━
@@ -127,6 +136,7 @@ export async function sendTelegramReceiptNotification(
           caption,
           parse_mode: "HTML",
         }),
+        signal: AbortSignal.timeout(5000),
       });
       return { success: res.ok };
     }
@@ -141,9 +151,10 @@ export async function sendTelegramReceiptNotification(
         text: caption,
         parse_mode: "HTML",
       }),
+      signal: AbortSignal.timeout(5000),
     });
     return { success: res.ok };
-  } catch (err) {
+  } catch {
     return { success: false };
   }
 }

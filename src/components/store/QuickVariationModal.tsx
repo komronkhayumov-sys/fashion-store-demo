@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
-import { X, Check, ShoppingBag, Plus, Minus, Sparkles, ShieldCheck } from "lucide-react";
+import { X, Check, ShoppingBag, Plus, Minus } from "lucide-react";
 import { Language, Product } from "@/types";
 import { formatUzbekCurrency } from "@/lib/format";
 
@@ -87,18 +87,17 @@ export const QuickVariationModal: React.FC<QuickVariationModalProps> = ({
     return ["Klassik Qora", "To'q Ko'k", "Oq (White)"];
   }, [product]);
 
-  const [selectedSize, setSelectedSize] = useState<string>("");
-  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [prevProductId, setPrevProductId] = useState(product?.id);
+  const [selectedSize, setSelectedSize] = useState<string>(() => availableSizes[0] || "M");
+  const [selectedColor, setSelectedColor] = useState<string>(() => availableColors[0] || "Qora");
   const [quantity, setQuantity] = useState<number>(1);
 
-  // Sync state whenever product changes
-  useEffect(() => {
-    if (product) {
-      setSelectedSize(availableSizes[0] || "M");
-      setSelectedColor(availableColors[0] || "Qora");
-      setQuantity(1);
-    }
-  }, [product, availableSizes, availableColors]);
+  if (product && product.id !== prevProductId) {
+    setPrevProductId(product.id);
+    setSelectedSize(availableSizes[0] || "M");
+    setSelectedColor(availableColors[0] || "Qora");
+    setQuantity(1);
+  }
 
   if (!isOpen || !product) return null;
 

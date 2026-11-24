@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       phone: body.phone.trim(),
       address: body.address?.trim(),
       preferredSize: body.preferredSize,
+      measurements: body.measurements,
     });
 
     return NextResponse.json({ success: true, customer });

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,55 +39,7 @@ export default function CustomerOrdersPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Auto-fill from localStorage & theme sync
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("moda_theme") || localStorage.getItem("button_theme");
-    if (savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"))) {
-      setIsDark(true);
-      document.documentElement.classList.add("dark");
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      setIsDark(false);
-      document.documentElement.classList.remove("dark");
-      document.documentElement.setAttribute("data-theme", "light");
-    }
-
-    try {
-      const savedPhone =
-        localStorage.getItem("moda_customer_phone") ||
-        localStorage.getItem("button_customer_phone") ||
-        localStorage.getItem("button_user_phone");
-      if (savedPhone) {
-        setSearchPhone(savedPhone);
-        fetchOrdersByPhone(savedPhone);
-      }
-    } catch {}
-
-    fetch("/api/settings")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.settings) {
-          setSettings(data.settings);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    if (next) {
-      document.documentElement.classList.add("dark");
-      document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("moda_theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.setAttribute("data-theme", "light");
-      localStorage.setItem("moda_theme", "light");
-    }
-  };
-
-  const fetchOrdersByPhone = async (phone: string) => {
+  const fetchOrdersByPhone = useCallback(async (phone: string) => {
     const clean = phone.replace(/\D/g, "");
     if (clean.length < 7) return;
 
@@ -135,6 +87,54 @@ export default function CustomerOrdersPage() {
       console.error(e);
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  // Auto-fill from localStorage & theme sync
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("moda_theme") || localStorage.getItem("button_theme");
+    if (savedTheme === "dark" || (!savedTheme && document.documentElement.classList.contains("dark"))) {
+      setIsDark(true);
+      document.documentElement.classList.add("dark");
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      setIsDark(false);
+      document.documentElement.classList.remove("dark");
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+
+    try {
+      const savedPhone =
+        localStorage.getItem("moda_customer_phone") ||
+        localStorage.getItem("button_customer_phone") ||
+        localStorage.getItem("button_user_phone");
+      if (savedPhone) {
+        setSearchPhone(savedPhone);
+        fetchOrdersByPhone(savedPhone);
+      }
+    } catch {}
+
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setSettings(data.settings);
+        }
+      })
+      .catch(() => {});
+  }, [fetchOrdersByPhone]);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    if (next) {
+      document.documentElement.classList.add("dark");
+      document.documentElement.setAttribute("data-theme", "dark");
+      localStorage.setItem("moda_theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.setAttribute("data-theme", "light");
+      localStorage.setItem("moda_theme", "light");
     }
   };
 

@@ -38,7 +38,7 @@ export function getTashkentTime(): { hours: number; minutes: number; timeString:
     if (hours === 24) hours = 0;
     const timeString = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
     return { hours, minutes, timeString };
-  } catch (err) {
+  } catch {
     // Resilient fallback using explicit UTC+5 calculation
     const now = new Date();
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
@@ -59,7 +59,8 @@ export function getTashkentTime(): { hours: number; minutes: number; timeString:
  * - 10:00 to 22:00 (600 to 1319 min): "Hozir ochiq (10:00 – 22:00)" / "Сейчас открыто (10:00 – 22:00)"
  * - After 22:00 (>= 1320 min): "Hozir yopiq (Ertaga 10:00 da ochiladi)" / "Сейчас закрыто (Откроется завтра в 10:00)"
  */
-export function getStoreTimeStatus(lang: "uz" | "ru" = "uz"): StoreTimeStatus {
+export function getStoreTimeStatus(_lang?: "uz" | "ru"): StoreTimeStatus {
+  void _lang;
   const { hours, minutes, timeString } = getTashkentTime();
   const currentTotalMinutes = hours * 60 + minutes;
 

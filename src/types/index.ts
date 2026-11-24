@@ -164,3 +164,14 @@ export type StoreSettings = {
   comboDiscountPercent?: number;
   globalPromoDiscountPercent?: number;
 };
+
+export interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+declare global {
+  interface Window {
+    __deferredInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
+}

@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
 
     if (!isAdmin) {
       // Omit sensitive secrets for public
-      const { adminPin, telegramBotToken, telegramChatId, ...publicSettings } = settings;
+      const { adminPin: _adminPin, telegramBotToken: _bot, telegramChatId: _chat, geminiApiKey: _gemini, ...publicSettings } = settings;
+      void _adminPin; void _bot; void _chat; void _gemini;
       return NextResponse.json({ success: true, settings: publicSettings });
     }
 
@@ -32,7 +33,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
 
     // If updating PIN, validate length
-    if (body.adminPin && String(body.adminPin).length < 4) {
+    if (body.adminPin !== undefined && String(body.adminPin).trim().length < 4) {
       return NextResponse.json({ success: false, error: "PIN kod kamida 4 xonali bo'lishi kerak" }, { status: 400 });
     }
 

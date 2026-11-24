@@ -331,8 +331,9 @@ export default function CartPage() {
       } else {
         setErrorMessage(data.error || (isRu ? "Ошибка оформления заказа" : "Buyurtma berishda xatolik yuz berdi"));
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || (isRu ? "Ошибка сервера" : "Server bilan bog'lanishda xatolik"));
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(errorMsg || (isRu ? "Ошибка сервера" : "Server bilan bog'lanishda xatolik"));
     } finally {
       setIsSubmitting(false);
     }
@@ -776,7 +777,7 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-[#1e293b]/70 border border-[#E2E8F0] dark:border-slate-700 text-xs text-[#64748B] dark:text-slate-400 flex items-center gap-2.5">
+                    <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-[#1e293b] border border-[#E2E8F0] dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-2.5">
                       <Truck className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0" />
                       <span>
                         {deliveryRegion === "tashkent"

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { X, Check, Ruler, Sparkles, User, Info, ArrowRight } from "lucide-react";
-import { Language, Product } from "@/types";
+import { X, Ruler, Sparkles, ArrowRight } from "lucide-react";
+import { Language } from "@/types";
 
 interface SmartSizeCalculatorProps {
   isOpen: boolean;

@@ -9,15 +9,19 @@ export function useStoreTimeStatus(lang: Language = "uz"): StoreTimeStatus & { i
   const [status, setStatus] = useState<StoreTimeStatus>(() => getStoreTimeStatus(lang));
 
   useEffect(() => {
-    setIsHydrated(true);
-    // Recalculate immediately on client hydration using real Tashkent time
-    setStatus(getStoreTimeStatus(lang));
+    const handle = requestAnimationFrame(() => {
+      setIsHydrated(true);
+      setStatus(getStoreTimeStatus(lang));
+    });
 
     const interval = setInterval(() => {
       setStatus(getStoreTimeStatus(lang));
     }, 30000); // Every 30 seconds
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelAnimationFrame(handle);
+      clearInterval(interval);
+    };
   }, [lang]);
 
   return {

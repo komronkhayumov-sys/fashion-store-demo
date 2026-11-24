@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrders, saveOrder, updateOrder, updateOrderStatus, verifyPin } from "@/lib/storage";
+import { getOrders, saveOrder, updateOrder, verifyPin } from "@/lib/storage";
 import { sendTelegramOrderNotification, sendTelegramReceiptNotification } from "@/lib/telegram";
 import { Order } from "@/types";
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const orderId = `BTN-${Date.now().toString().slice(-6)}`;
+    const orderId = `BTN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const newOrder: Order = {
       id: orderId,
       customerName: body.customerName.trim(),
@@ -138,6 +138,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    const VALID_STATUSES = ["new", "confirmed", "delivered", "cancelled"];
+    const VALID_PAYMENT_STATUSES = ["pending", "verifying", "paid", "rejected"];
+
+    if (body.status && !VALID_STATUSES.includes(body.status)) {
+      return NextResponse.json({ success: false, error: "Noto'g'ri status" }, { status: 400 });
+    }
+    if (body.paymentStatus && !VALID_PAYMENT_STATUSES.includes(body.paymentStatus)) {
+      return NextResponse.json({ success: false, error: "Noto'g'ri to'lov statusi" }, { status: 400 });
+    }
+
     const updates: Partial<Order> = {};
     if (body.status) updates.status = body.status;
     if (body.paymentStatus) updates.paymentStatus = body.paymentStatus;
@@ -159,11 +169,16 @@ export async function PATCH(req: NextRequest) {
 /**
  * PUT /api/orders
  * Resilient multi-tier client-server sync endpoint.
- * Allows client (Customer or Admin) to restore locally cached orders
- * to serverless instance storage so orders are NEVER lost across restarts.
+ * Requires admin authentication to prevent unauthorized order manipulation.
  */
 export async function PUT(req: NextRequest) {
   try {
+    const pinHeader = req.headers.get("x-admin-pin") || "";
+    const isAdmin = await verifyPin(pinHeader);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const syncOrders: Order[] = body.syncOrders;
     if (!Array.isArray(syncOrders) || syncOrders.length === 0) {

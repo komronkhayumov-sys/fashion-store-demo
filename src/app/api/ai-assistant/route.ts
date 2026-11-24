@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSettings, saveSettings, getProducts } from "@/lib/storage";
+import { getSettings, saveSettings, getProducts, verifyPin } from "@/lib/storage";
 
 export type AssistantRequest = {
   message?: string;
@@ -150,27 +150,39 @@ export async function POST(req: NextRequest) {
     const apiKeyMatch = userMessage.match(/\b(AIzaSy[A-Za-z0-9_-]{33})\b/);
     if (apiKeyMatch) {
       const detectedKey = apiKeyMatch[1];
-      try {
-        await saveSettings({ geminiApiKey: detectedKey });
-      } catch (e) {
-        console.warn("Could not save settings:", e);
+      const pinHeader = req.headers.get("x-admin-pin") || "";
+      const isAdmin = await verifyPin(pinHeader);
+      if (isAdmin) {
+        try {
+          await saveSettings({ geminiApiKey: detectedKey });
+        } catch (e) {
+          console.warn("Could not save settings:", e);
+        }
       }
       return NextResponse.json({
         success: true,
         reply: isUz
-          ? `🎉 **Google Gemini API kaliti qabul qilindi va muvaffaqiyatli saqlandi!**\n\n` +
+          ? `🎉 **Google Gemini API kaliti qabul qilindi!**\n\n` +
             `Haqiqiy jonli Google Gemini generativ sun'iy intellekti faollashdi 🤖✨\n\n` +
             `Endi siz men bilan xuddi ChatGPT / Gemini kabi har qanday mavzuda erkin suhbatlashishingiz, kiyimlar va obrazlar haqida so'rashingiz mumkin. Savolingizni yozing!`
-          : `🎉 **Google Gemini API ключ успешно сохранен!**\n\n` +
+          : `🎉 **Google Gemini API ключ принят!**\n\n` +
             `Активирован реальный живой генеративный AI Google Gemini 🤖✨ Задайте мне любой вопрос!`,
-        savedApiKey: detectedKey,
+        savedApiKey: isAdmin ? detectedKey : undefined,
         provider: "gemini-activated",
       });
     }
 
     // 1. Direct Size Recommendation Flow
-    if (body.type === "size_recommendation" && body.height && body.weight) {
-      const calculation = calculateMenSize(body.height, body.weight, body.category);
+    if (body.type === "size_recommendation") {
+      const height = Number(body.height);
+      const weight = Number(body.weight);
+      if (isNaN(height) || isNaN(weight) || height < 100 || height > 250 || weight < 30 || weight > 250) {
+        return NextResponse.json({
+          success: false,
+          error: isUz ? "Bo'y (100-250 sm) yoki vazn (30-250 kg) oralig'ida bo'lishi kerak" : "Рост (100-250 см) или вес (30-250 кг) вне допустимого диапазона",
+        }, { status: 400 });
+      }
+      const calculation = calculateMenSize(height, weight, body.category);
       const text = isUz ? calculation.adviceUz : calculation.adviceRu;
 
       return NextResponse.json({

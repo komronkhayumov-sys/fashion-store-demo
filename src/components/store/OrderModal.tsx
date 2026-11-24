@@ -125,7 +125,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [cardCopied, setCardCopied] = useState(false);
   const [card2Copied, setCard2Copied] = useState(false);
   const [activeCardTab, setActiveCardTab] = useState<"card1" | "card2">("card1");
-  const [paidConfirmed, setPaidConfirmed] = useState(false);
 
   // Auto-initialize options when product changes
   useEffect(() => {
@@ -137,7 +136,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setSelectedColor(initialColor || product.colors?.[0] || "");
       setOrderSuccessId(null);
       setErrorMessage("");
-      setPaidConfirmed(false);
 
       // Pre-fill customer from localStorage if available
       try {
@@ -555,7 +553,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   <ReceiptUploader
                     orderId={orderSuccessId}
                     lang={lang}
-                    onUploaded={() => setPaidConfirmed(true)}
                   />
                 </div>
               </div>
@@ -1325,7 +1322,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             {/* Instant Buy Button */}
             <button
               type="button"
-              onClick={() => setModalMode("checkout")}
+              onClick={handleProceedToCheckout}
               className="flex-[1.4] py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95"
             >
               <span>Hoziroq Xarid Qilish</span>

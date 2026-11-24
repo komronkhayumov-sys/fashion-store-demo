@@ -1,5 +1,3 @@
-import { Language } from "@/types";
-
 export const translations = {
   uz: {
     brandTagline: "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",

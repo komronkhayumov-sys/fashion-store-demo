@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { Customer, Order, Product, StoreSettings } from "@/types";
+import { Customer, CustomerMeasurements, Order, Product, StoreSettings } from "@/types";
 import { DEFAULT_SETTINGS, INITIAL_PRODUCTS } from "@/constants";
 import { getSupabase } from "@/lib/supabase";
 
@@ -217,6 +217,7 @@ export async function saveCustomer(data: {
   phone: string;
   address?: string;
   preferredSize?: string;
+  measurements?: CustomerMeasurements;
 }): Promise<Customer> {
   const customers = await getCustomers();
   const cleanPhone = data.phone.replace(/\s+/g, "");
@@ -233,6 +234,7 @@ export async function saveCustomer(data: {
       name: data.name || customers[existingIdx].name,
       address: data.address || customers[existingIdx].address,
       preferredSize: data.preferredSize || customers[existingIdx].preferredSize,
+      measurements: data.measurements || customers[existingIdx].measurements,
     };
     targetCustomer = customers[existingIdx];
   } else {
@@ -242,6 +244,7 @@ export async function saveCustomer(data: {
       phone: data.phone,
       address: data.address || "",
       preferredSize: data.preferredSize || "L",
+      measurements: data.measurements,
       ordersCount: 0,
       totalSpent: 0,
       registeredAt: new Date().toISOString(),
@@ -261,6 +264,7 @@ export async function saveCustomer(data: {
         phone: targetCustomer.phone,
         address: targetCustomer.address || "",
         preferred_size: targetCustomer.preferredSize || "L",
+        measurements: targetCustomer.measurements,
         orders_count: targetCustomer.ordersCount,
         total_spent: targetCustomer.totalSpent,
         registered_at: targetCustomer.registeredAt,
@@ -425,23 +429,26 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function saveProduct(productData: Partial<Product> & { name: string; price: number }): Promise<Product> {
   const products = await getProducts();
   const id = productData.id || `btn-${Date.now().toString(36)}`;
+  const existingProduct = products.find((p) => p.id === id);
 
   const savedProduct: Product = {
+    ...existingProduct,
     id,
-    name: productData.name,
-    nameRu: productData.nameRu || productData.name,
-    description: productData.description || "",
-    descriptionRu: productData.descriptionRu || productData.description || "",
-    price: Number(productData.price) || 0,
-    oldPrice: productData.oldPrice ? Number(productData.oldPrice) : undefined,
-    category: productData.category || "suits",
-    image: productData.image || "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
-    sizes: productData.sizes && productData.sizes.length > 0 ? productData.sizes : ["M", "L", "XL"],
-    colors: productData.colors || [],
-    isAvailable: productData.isAvailable ?? true,
-    isFeatured: productData.isFeatured ?? false,
-    badge: productData.badge,
-    createdAt: productData.createdAt || new Date().toISOString(),
+    name: productData.name ?? existingProduct?.name ?? "",
+    nameRu: productData.nameRu ?? existingProduct?.nameRu ?? productData.name,
+    description: productData.description ?? existingProduct?.description ?? "",
+    descriptionRu: productData.descriptionRu ?? existingProduct?.descriptionRu ?? productData.description ?? "",
+    price: productData.price !== undefined ? Number(productData.price) : (existingProduct?.price ?? 0),
+    oldPrice: productData.oldPrice !== undefined ? (productData.oldPrice ? Number(productData.oldPrice) : undefined) : existingProduct?.oldPrice,
+    category: productData.category ?? existingProduct?.category ?? "suits",
+    image: productData.image ?? existingProduct?.image ?? "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
+    images: productData.images ?? existingProduct?.images ?? [],
+    sizes: productData.sizes && productData.sizes.length > 0 ? productData.sizes : (existingProduct?.sizes && existingProduct.sizes.length > 0 ? existingProduct.sizes : ["M", "L", "XL"]),
+    colors: productData.colors ?? existingProduct?.colors ?? [],
+    isAvailable: productData.isAvailable ?? existingProduct?.isAvailable ?? true,
+    isFeatured: productData.isFeatured ?? existingProduct?.isFeatured ?? false,
+    badge: productData.badge !== undefined ? productData.badge : existingProduct?.badge,
+    createdAt: productData.createdAt || existingProduct?.createdAt || new Date().toISOString(),
   };
 
   const index = products.findIndex((p) => p.id === id);
@@ -634,7 +641,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
       customerPhone: "",
       deliveryType: "delivery",
       paymentMethod: "click",
-      paymentStatus: (updates.paymentStatus as any) || "verifying",
+      paymentStatus: updates.paymentStatus || "verifying",
       items: [],
       totalAmount: 0,
       status: "new",
@@ -650,7 +657,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   const supabase = getSupabase();
   if (supabase) {
     try {
-      const dbUpdates: Record<string, any> = {};
+      const dbUpdates: Record<string, unknown> = {};
       if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.paymentStatus !== undefined) dbUpdates.payment_status = updates.paymentStatus;
       if (updates.paymentReceipt !== undefined) dbUpdates.payment_receipt = updates.paymentReceipt;

@@ -54,7 +54,7 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
             {isUz ? (
               <>
                 Klassik va zamonaviy <br />
-                <span className="text-blue-600 dark:text-blue-400">kiyimlar to'plami</span>
+                <span className="text-blue-600 dark:text-blue-400">kiyimlar to&apos;plami</span>
               </>
             ) : (
               <>

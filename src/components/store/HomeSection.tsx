@@ -341,9 +341,9 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                   : "bg-white dark:bg-[#0f172a] text-[#64748B] dark:text-slate-400 border border-[#E2E8F0] dark:border-slate-800 hover:border-violet-600/40 hover:text-violet-700 dark:hover:text-violet-400"
               }`}
             >
-              <span>{isUz ? cat.labelUz : cat.labelRu}</span>
+              <span className="whitespace-nowrap shrink-0">{isUz ? cat.labelUz : cat.labelRu}</span>
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                className={`whitespace-nowrap shrink-0 px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   isActive
                     ? "bg-white/25 text-white"
                     : "bg-[#F1F5F9] dark:bg-[#1e293b] text-[#64748B] dark:text-slate-400"

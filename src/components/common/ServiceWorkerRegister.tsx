@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-
-declare global {
-  interface Window {
-    __deferredInstallPrompt?: any;
-  }
-}
+import { BeforeInstallPromptEvent } from "@/types";
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
@@ -15,7 +10,7 @@ export default function ServiceWorkerRegister() {
     // 1. Capture beforeinstallprompt immediately on window
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
-      window.__deferredInstallPrompt = e;
+      window.__deferredInstallPrompt = e as BeforeInstallPromptEvent;
       window.dispatchEvent(new CustomEvent("pwa-prompt-ready"));
     };
 

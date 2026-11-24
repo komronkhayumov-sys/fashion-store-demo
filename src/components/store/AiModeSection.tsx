@@ -182,7 +182,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
     if (!textToSend || isBotTyping) return;
 
     const userMessage: ChatMessage = {
-      id: `usr-${Date.now()}`,
+      id: `usr-${Math.random().toString(36).substring(2, 9)}`,
       sender: "user",
       text: textToSend,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -231,7 +231,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
       const matched = detectRecommendedProducts(replyText);
 
       const botMessage: ChatMessage = {
-        id: `bot-${Date.now()}`,
+        id: `bot-${Math.random().toString(36).substring(2, 9)}`,
         sender: "bot",
         text: replyText,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -241,7 +241,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
       setChatMessages((prev) => [...prev, botMessage]);
     } catch {
       const errorMsg: ChatMessage = {
-        id: `bot-err-${Date.now()}`,
+        id: `bot-err-${Math.random().toString(36).substring(2, 9)}`,
         sender: "bot",
         text: isUz
           ? `Aloqada vaqtinchalik uzilish yuz berdi. Iltimos, qaytadan urinib ko'ring yoki filiallarimizga qo'ng'iroq qiling (${settings?.phone1 || "+998 90 123 45 67"}).`
@@ -257,7 +257,7 @@ export const AiModeSection: React.FC<AiModeSectionProps> = ({
   const handleResetChat = () => {
     setChatMessages([
       {
-        id: `msg-reset-${Date.now()}`,
+        id: `msg-reset-${Math.random().toString(36).substring(2, 9)}`,
         sender: "bot",
         text: isUz ? initialGreetingUz : initialGreetingRu,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),

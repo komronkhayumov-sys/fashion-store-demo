@@ -612,8 +612,8 @@ export default function ProductDetailClient({
       {/* PWA Prompt */}
       <PwaInstallPrompt lang={lang} target="store" />
 
-      {/* Persistent Floating Cart Button (Temu / Alibaba style) */}
-      <div className="fixed bottom-24 md:bottom-20 right-4 sm:right-6 md:right-8 z-40 animate-fade-in">
+      {/* Persistent Floating Cart Button (Temu / Alibaba style - desktop only, mobile has sticky purchase bar) */}
+      <div className="hidden md:flex fixed md:bottom-20 md:right-8 z-40 animate-fade-in">
         <Link
           href="/cart"
           aria-label={isRu ? `Корзина (${totalCartCount})` : `Savat (${totalCartCount})`}

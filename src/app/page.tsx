@@ -35,7 +35,6 @@ export default function HomePage() {
   const [lang, setLang] = useState<Language>("uz");
   const [isDark, setIsDark] = useState<boolean>(false); // Default to clean modern palette matching user mockup
   const [activeSection, setActiveSection] = useState<CustomerNavSection>("katalog");
-  const [selectedCatalogCategory, setSelectedCatalogCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Products and Settings from API
@@ -62,8 +61,7 @@ export default function HomePage() {
   const [isPhoneOpen, setIsPhoneOpen] = useState(false);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
 
-  // Loading & Toast Notification states (Phase 10: UI States)
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  // Toast Notification state
   const [timeStatus, setTimeStatus] = useState(() => getStoreTimeStatus(lang));
 
   // Dynamic live client hydration for Uzbekistan working hours
@@ -88,7 +86,6 @@ export default function HomePage() {
   // Load products, settings, wishlist, cart, customer on mount
   useEffect(() => {
     async function loadData() {
-      setIsLoadingProducts(true);
       try {
         const [prodRes, settRes] = await Promise.all([
           fetch("/api/products"),
@@ -105,8 +102,6 @@ export default function HomePage() {
         }
       } catch (e) {
         console.error("Could not fetch remote data, using local defaults:", e);
-      } finally {
-        setIsLoadingProducts(false);
       }
     }
     loadData();
@@ -275,36 +270,6 @@ export default function HomePage() {
     });
   };
 
-  const handleUpdateCartQuantity = (id: string, delta: number) => {
-    setCartItems((prev) => {
-      const next = prev
-        .map((it) => (it.id === id ? { ...it, quantity: it.quantity + delta } : it))
-        .filter((it) => it.quantity > 0);
-      try {
-        localStorage.setItem("moda_cart", JSON.stringify(next));
-      } catch (e) {}
-      return next;
-    });
-  };
-
-  const handleRemoveCartItem = (id: string) => {
-    setCartItems((prev) => {
-      const next = prev.filter((it) => it.id !== id);
-      try {
-        localStorage.setItem("moda_cart", JSON.stringify(next));
-      } catch (e) {}
-      return next;
-    });
-  };
-
-  const handleClearCart = () => {
-    setCartItems([]);
-    try {
-      localStorage.removeItem("moda_cart");
-      localStorage.removeItem("button_cart");
-    } catch (e) {}
-  };
-
   const handleOrderCreated = (newOrder: Order) => {
     if (newOrder.customerPhone) {
       try {
@@ -377,10 +342,7 @@ export default function HomePage() {
   };
 
   // Nav actions
-  const handleViewCatalog = (category?: string) => {
-    if (category) {
-      setSelectedCatalogCategory(category);
-    }
+  const handleViewCatalog = (_category?: string) => {
     setActiveSection("katalog");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

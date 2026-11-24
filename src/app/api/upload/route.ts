@@ -3,6 +3,9 @@ import fs from "fs";
 import path from "path";
 import { verifyPin } from "@/lib/storage";
 
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+
 export async function POST(req: NextRequest) {
   const pinHeader = req.headers.get("x-admin-pin") || "";
   const uploadTypeHeader = req.headers.get("x-upload-type") || "";
@@ -13,7 +16,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     const formUploadType = formData.get("type") as string | null;
 
-    const isReceipt = uploadTypeHeader === "receipt" || formUploadType === "receipt" || !isAdmin;
+    const isReceipt = uploadTypeHeader === "receipt" || formUploadType === "receipt";
 
     if (!isAdmin && !isReceipt) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -21,6 +24,14 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ success: false, error: "Fayl topilmadi" }, { status: 400 });
+    }
+
+    const ext = path.extname(file.name).toLowerCase();
+    if (!ALLOWED_MIME_TYPES.includes(file.type) || !ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json({
+        success: false,
+        error: "Faqat rasm fayllari (JPG, PNG, WEBP, GIF) qabul qilinadi",
+      }, { status: 400 });
     }
 
     // Check file size (max 10MB)
@@ -53,7 +64,6 @@ export async function POST(req: NextRequest) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      const ext = path.extname(file.name) || ".jpg";
       const prefix = isReceipt ? "receipt" : "btn";
       const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${ext}`;
       const filePath = path.join(uploadsDir, filename);

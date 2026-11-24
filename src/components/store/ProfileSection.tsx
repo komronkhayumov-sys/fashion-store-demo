@@ -54,6 +54,16 @@ interface ProfileSectionProps {
   initialSubView?: ProfileSubView;
 }
 
+export interface SavedOutfitLook {
+  id: string;
+  titleUz: string;
+  titleRu?: string;
+  style: string;
+  totalPrice: number;
+  discountedPrice?: number;
+  items: Product[];
+}
+
 export type ProfileSubView =
   | "overview"
   | "orders"
@@ -127,7 +137,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
 
   // Saved AI Looks
-  const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
+  const [savedOutfits, setSavedOutfits] = useState<SavedOutfitLook[]>([]);
 
   // Saved addresses list & validation
   const [savedAddresses, setSavedAddresses] = useState<string[]>(
@@ -178,7 +188,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           setSavedAddresses(parsed);
         }
       }
-    } catch (e) {}
+    } catch {}
   }, []);
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -255,7 +265,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     setIsAddingAddress(false);
     try {
       localStorage.setItem("moda_saved_addresses", JSON.stringify(next));
-    } catch (e) {}
+    } catch {}
   };
 
   const handleDeleteAddress = (idx: number) => {
@@ -263,7 +273,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     setSavedAddresses(next);
     try {
       localStorage.setItem("moda_saved_addresses", JSON.stringify(next));
-    } catch (e) {}
+    } catch {}
   };
 
   // Filtered orders list matching Mockup Screen 6
@@ -1100,7 +1110,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </div>
           ) : (
             <div className="space-y-3.5">
-              {savedOutfits.map((look: any, idx: number) => (
+              {savedOutfits.map((look: SavedOutfitLook, idx: number) => (
                 <div
                   key={look.id || idx}
                   className="p-4 rounded-2xl bg-[#F8FAFC] dark:bg-[#1e293b] border border-[#E2E8F0] dark:border-slate-700 space-y-3 hover:border-violet-600/40 transition-all"
@@ -1121,7 +1131,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
                   {/* Garments thumbnail row */}
                   <div className="grid grid-cols-3 gap-2">
-                    {look.items?.map((item: any, iIdx: number) => (
+                    {look.items?.map((item: Product, iIdx: number) => (
                       <div
                         key={item.id + iIdx}
                         onClick={() => onSelectProduct(item)}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import {
   Download,
@@ -15,12 +15,7 @@ import {
   Copy,
   Laptop,
 } from "lucide-react";
-import { Language } from "@/types";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import { Language, BeforeInstallPromptEvent } from "@/types";
 
 interface PwaInstallPromptProps {
   lang?: Language;
@@ -38,9 +33,6 @@ export default function PwaInstallPrompt({
   const [isDismissed, setIsDismissed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isStandaloneApp, setIsStandaloneApp] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -48,6 +40,34 @@ export default function PwaInstallPrompt({
 
   const isRu = lang === "ru";
   const isAdmin = target === "admin";
+
+  const triggerInstallFlow = useCallback(async () => {
+    // Check local state or global window reference
+    const p = promptRef.current || (typeof window !== "undefined" ? window.__deferredInstallPrompt : null);
+
+    if (p) {
+      try {
+        await p.prompt();
+        const choice = await p.userChoice;
+        if (choice.outcome === "accepted") {
+          setShowPrompt(false);
+          setIsMinimized(false);
+          setShowGuideModal(false);
+          if (typeof window !== "undefined") {
+            window.__deferredInstallPrompt = null;
+          }
+          setDeferredPrompt(null);
+          promptRef.current = null;
+          return;
+        }
+      } catch (err) {
+        console.warn("[pwa] Native prompt error:", err);
+      }
+    }
+
+    // If native prompt wasn't available or was already prompted, show the comprehensive guide modal
+    setShowGuideModal(true);
+  }, []);
 
   // Keep promptRef in sync with state
   useEffect(() => {
@@ -71,14 +91,10 @@ export default function PwaInstallPrompt({
     // 2. Detect device and browser environment
     const ua = window.navigator.userAgent.toLowerCase();
     const iosDevice = /iphone|ipad|ipod/.test(ua);
-    const androidDevice = /android/.test(ua);
     const inApp = /telegram|instagram|fbav|line|whatsapp|micromessenger/i.test(ua);
-    const desktopDevice = !iosDevice && !androidDevice;
+    const desktopDevice = !iosDevice && !/android/.test(ua);
 
-    setIsIos(iosDevice);
-    setIsAndroid(androidDevice);
     setIsInAppBrowser(inApp);
-    setIsDesktop(desktopDevice);
 
     if (iosDevice) {
       setActivePlatformTab("ios");
@@ -136,35 +152,7 @@ export default function PwaInstallPrompt({
       window.removeEventListener("open-pwa-install", handleGlobalTrigger);
       clearTimeout(timer);
     };
-  }, [target]);
-
-  const triggerInstallFlow = async () => {
-    // Check local state or global window reference
-    const p = promptRef.current || (typeof window !== "undefined" ? window.__deferredInstallPrompt : null);
-
-    if (p) {
-      try {
-        await p.prompt();
-        const choice = await p.userChoice;
-        if (choice.outcome === "accepted") {
-          setShowPrompt(false);
-          setIsMinimized(false);
-          setShowGuideModal(false);
-          if (typeof window !== "undefined") {
-            window.__deferredInstallPrompt = null;
-          }
-          setDeferredPrompt(null);
-          promptRef.current = null;
-          return;
-        }
-      } catch (err) {
-        console.warn("[pwa] Native prompt error:", err);
-      }
-    }
-
-    // If native prompt wasn't available or was already prompted, show the comprehensive guide modal
-    setShowGuideModal(true);
-  };
+  }, [target, triggerInstallFlow]);
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
@@ -179,30 +167,28 @@ export default function PwaInstallPrompt({
   return (
     <>
       {/* 1. Minimized Floating Quick Install Badge */}
-      {showPrompt && isMinimized && (
+      {!isAdmin && showPrompt && isMinimized && (
         <button
           type="button"
           onClick={() => {
             setIsMinimized(false);
             triggerInstallFlow();
           }}
-          className="fixed top-3 left-3 md:top-auto md:bottom-8 md:left-8 z-50 px-3.5 py-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-blue-400/40 animate-scale-in cursor-pointer hover:scale-105 active:scale-95 transition-all"
+          className="fixed bottom-20 left-3 md:bottom-8 md:left-8 z-40 px-3.5 py-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-blue-400/40 animate-scale-in cursor-pointer hover:scale-105 active:scale-95 transition-all"
         >
           <div className="w-5 h-5 rounded-full overflow-hidden relative shrink-0 border border-white/40">
             <Image src="/moda-logo.svg" alt="MODA UZ" fill className="object-cover" unoptimized />
           </div>
           <span>
-            {isAdmin
-              ? isRu ? "📲 Установить Admin App" : "📲 Admin ilovasini o'rnatish"
-              : isRu ? "📲 Установить приложение" : "📲 Ilovani o'rnatish"}
+            {isRu ? "📲 Установить приложение" : "📲 Ilovani o'rnatish"}
           </span>
           <Download className="w-3.5 h-3.5 animate-bounce" />
         </button>
       )}
 
-      {/* 2. Floating Recommendation Banner (Top on mobile so it never collides with bottom nav/cart; bottom-left on desktop) */}
-      {showPrompt && !isMinimized && (
-        <div className="fixed top-3 left-3 right-3 sm:left-6 sm:right-auto sm:w-[390px] md:top-auto md:bottom-8 md:left-8 z-50 animate-fade-in">
+      {/* 2. Floating Recommendation Banner (Bottom above bottom nav on mobile, bottom-left on desktop) */}
+      {!isAdmin && showPrompt && !isMinimized && (
+        <div className="fixed bottom-20 left-3 right-3 sm:left-6 sm:right-auto sm:w-[390px] md:bottom-8 md:left-8 z-40 animate-fade-in">
           <div className="p-3.5 sm:p-4 rounded-3xl bg-slate-900/98 backdrop-blur-xl border border-blue-500/40 text-white shadow-2xl flex items-center justify-between gap-3 ring-1 ring-blue-500/20">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-11 h-11 rounded-2xl overflow-hidden relative shrink-0 border border-blue-400/50 shadow-md bg-black">

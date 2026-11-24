@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { Upload, CheckCircle2, Clock, AlertCircle, RefreshCw, Camera, Eye } from "lucide-react";
-import { Language } from "@/types";
+import { Language, Order } from "@/types";
 
 interface ReceiptUploaderProps {
   orderId: string;
@@ -160,7 +160,7 @@ export default function ReceiptUploader({
       try {
         const stored = JSON.parse(localStorage.getItem("moda_customer_orders") || localStorage.getItem("button_customer_orders") || "[]");
         if (Array.isArray(stored)) {
-          const updatedList = stored.map((o: any) =>
+          const updatedList = stored.map((o: Order) =>
             o.id === orderId
               ? { ...o, paymentReceipt: uploadedUrl, paymentStatus: "verifying" }
               : o

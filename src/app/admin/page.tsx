@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -22,7 +22,6 @@ import {
   Truck,
   Store,
   KeyRound,
-  ShieldCheck,
   Bot,
   ExternalLink,
   CreditCard,
@@ -44,20 +43,16 @@ import {
   Moon,
   Sun,
   Users,
-  Compass,
-  DollarSign,
   TrendingUp,
   ChevronDown,
   Home,
   BarChart2,
-  MapPin,
   Send,
   Calendar,
   Copy,
   X,
   Menu,
   Star,
-  Palette,
   Smartphone,
   Download,
   Sparkles,
@@ -161,7 +156,6 @@ export default function AdminPage() {
   // Gallery up to 10 images inputs
   const [newImageUrlInput, setNewImageUrlInput] = useState("");
   const [customSizeInput, setCustomSizeInput] = useState("");
-  const [activePaymentCardTab, setActivePaymentCardTab] = useState<"card1" | "card2">("card1");
 
   // Tariffs & Discounts State (Adjustable by Admin)
   const [deliveryPriceTashkentInput, setDeliveryPriceTashkentInput] = useState<number>(30000);
@@ -242,7 +236,7 @@ export default function AdminPage() {
   const t = adminI18n[lang];
 
   // Play audio chime
-  const playNotificationSound = () => {
+  const playNotificationSound = useCallback(() => {
     if (!soundEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
@@ -261,75 +255,9 @@ export default function AdminPage() {
       osc.start(now);
       osc.stop(now + 0.5);
     } catch (e) {}
-  };
+  }, [soundEnabled]);
 
-  const sizePresets = ["S", "M", "L", "XL", "XXL", "3XL", "46", "48", "50", "52", "54", "39", "40", "41", "42", "43", "44"];
-
-  // Authenticate PIN
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    try {
-      const res = await fetch("/api/settings", {
-        headers: { "x-admin-pin": pin },
-      });
-      if (res.ok) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem("moda_admin_pin", pin);
-        loadData(pin);
-      } else {
-        setAuthError(lang === "ru" ? "Неверный PIN-код! (По умолчанию: 1234)" : "Noto'g'ri PIN kod! (Standart: 1234)");
-      }
-    } catch (err) {
-      setAuthError(lang === "ru" ? "Ошибка сети" : "Tarmoq xatosi");
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem("moda_admin_pin");
-    sessionStorage.removeItem("button_admin_pin");
-    setPin("");
-  };
-
-  // Restore session & language
-  useEffect(() => {
-    const savedLang = (localStorage.getItem("moda_admin_lang") || localStorage.getItem("button_admin_lang")) as Language;
-    if (savedLang === "uz" || savedLang === "ru") {
-      setLang(savedLang);
-    }
-
-    const savedPin = sessionStorage.getItem("moda_admin_pin") || sessionStorage.getItem("button_admin_pin");
-    if (savedPin) {
-      setPin(savedPin);
-      // Pre-load cached orders instantly
-      const cachedRaw = localStorage.getItem("moda_admin_orders_cache") || localStorage.getItem("button_admin_orders_cache");
-      if (cachedRaw) {
-        try {
-          const parsed = JSON.parse(cachedRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setOrders(parsed);
-          }
-        } catch {}
-      }
-
-      fetch("/api/settings", {
-        headers: { "x-admin-pin": savedPin },
-      }).then((res) => {
-        if (res.ok) {
-          setIsAuthenticated(true);
-          loadData(savedPin);
-        }
-      });
-    }
-  }, []);
-
-  const handleLanguageChange = (newLang: Language) => {
-    setLang(newLang);
-    localStorage.setItem("moda_admin_lang", newLang);
-  };
-
-  const loadData = async (currentPin: string) => {
+  const loadData = useCallback(async (currentPin: string) => {
     setLoading(true);
     try {
       const [prodRes, orderRes, settRes, custRes] = await Promise.all([
@@ -394,6 +322,72 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  }, [playNotificationSound]);
+
+  const sizePresets = ["S", "M", "L", "XL", "XXL", "3XL", "46", "48", "50", "52", "54", "39", "40", "41", "42", "43", "44"];
+
+  // Authenticate PIN
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    try {
+      const res = await fetch("/api/settings", {
+        headers: { "x-admin-pin": pin },
+      });
+      if (res.ok) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem("moda_admin_pin", pin);
+        loadData(pin);
+      } else {
+        setAuthError(lang === "ru" ? "Неверный PIN-код! (По умолчанию: 1234)" : "Noto'g'ri PIN kod! (Standart: 1234)");
+      }
+    } catch (err) {
+      setAuthError(lang === "ru" ? "Ошибка сети" : "Tarmoq xatosi");
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem("moda_admin_pin");
+    sessionStorage.removeItem("button_admin_pin");
+    setPin("");
+  };
+
+  // Restore session & language
+  useEffect(() => {
+    const savedLang = (localStorage.getItem("moda_admin_lang") || localStorage.getItem("button_admin_lang")) as Language;
+    if (savedLang === "uz" || savedLang === "ru") {
+      setLang(savedLang);
+    }
+
+    const savedPin = sessionStorage.getItem("moda_admin_pin") || sessionStorage.getItem("button_admin_pin");
+    if (savedPin) {
+      setPin(savedPin);
+      // Pre-load cached orders instantly
+      const cachedRaw = localStorage.getItem("moda_admin_orders_cache") || localStorage.getItem("button_admin_orders_cache");
+      if (cachedRaw) {
+        try {
+          const parsed = JSON.parse(cachedRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setOrders(parsed);
+          }
+        } catch {}
+      }
+
+      fetch("/api/settings", {
+        headers: { "x-admin-pin": savedPin },
+      }).then((res) => {
+        if (res.ok) {
+          setIsAuthenticated(true);
+          loadData(savedPin);
+        }
+      });
+    }
+  }, [loadData]);
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem("moda_admin_lang", newLang);
   };
 
   // Auto-poll orders for notifications
@@ -441,7 +435,7 @@ export default function AdminPage() {
         .catch(() => {});
     }, 12000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, pin, soundEnabled]);
+  }, [isAuthenticated, pin, playNotificationSound]);
 
   // Card number auto-spacing (4 digits per group)
   const formatCardNumberInput = (val: string) => {
@@ -1176,6 +1170,17 @@ export default function AdminPage() {
               <Smartphone className="w-4 h-4" />
             </button>
 
+            {/* Sound Notification Toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`p-2.5 rounded-2xl border transition-colors cursor-pointer ${
+                isDark ? "bg-[#0f172a] border-slate-800 text-slate-300 hover:text-white" : "bg-white border-[#E2E8F0] text-[#64748B] shadow-xs hover:text-[#172554]"
+              }`}
+              title={soundEnabled ? (lang === "ru" ? "Выключить звук уведомлений" : "Bildirishnoma ovozini o'chirish") : (lang === "ru" ? "Включить звук уведомлений" : "Bildirishnoma ovozini yoqish")}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+            </button>
+
             {/* Notification Bell */}
             <button
               onClick={() => setActiveMenu("orders")}
@@ -1763,6 +1768,17 @@ export default function AdminPage() {
                 RU
               </button>
             </div>
+
+            {/* Sound Notification Toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`p-2.5 rounded-2xl border transition-colors cursor-pointer ${
+                isDark ? "bg-[#0f172a] border-slate-800 text-slate-300 hover:text-white" : "bg-white border-[#E2E8F0] text-[#64748B] shadow-xs hover:text-[#172554]"
+              }`}
+              title={soundEnabled ? (lang === "ru" ? "Выключить звук уведомлений" : "Bildirishnoma ovozini o'chirish") : (lang === "ru" ? "Включить звук уведомлений" : "Bildirishnoma ovozini yoqish")}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+            </button>
 
             {/* Notification Bell */}
             <button
@@ -4569,7 +4585,7 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setEditingProduct({
                         ...editingProduct,
-                        badge: (e.target.value as any) || undefined,
+                        badge: (e.target.value as Product["badge"]) || undefined,
                       })
                     }
                     className={`w-full px-3 py-2.5 rounded-xl text-xs focus:outline-none cursor-pointer ${inputBgClass}`}
@@ -5807,15 +5823,6 @@ function BookmarkIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-    </svg>
-  );
-}
-
-
-function HangerIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M12 3a2.5 2.5 0 0 0-2.5 2.5c0 .7.3 1.3.8 1.8L2.4 14.2A1.8 1.8 0 0 0 3.7 17h16.6a1.8 1.8 0 0 0 1.3-2.8L13.7 7.3a2.5 2.5 0 0 0 .8-1.8A2.5 2.5 0 0 0 12 3z" />
     </svg>
   );
 }
