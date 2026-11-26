@@ -7,6 +7,22 @@ import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export { isSupabaseConfigured };
 
+export async function checkSupabaseHealth(): Promise<{ connected: boolean; error?: string }> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return { connected: false, error: "Supabase env kalitlari (URL / KEY) kiritilmagan" };
+  }
+  try {
+    const { error } = await supabase.from("settings").select("id").limit(1);
+    if (error) {
+      return { connected: false, error: error.message };
+    }
+    return { connected: true };
+  } catch (err: unknown) {
+    return { connected: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 // Detect serverless environment (Vercel, AWS Lambda, Netlify, etc.)
 const isServerless = Boolean(
   process.env.VERCEL ||

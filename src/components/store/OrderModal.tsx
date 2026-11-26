@@ -239,9 +239,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   // Deep payment links
   const targetCardRaw = activeCardTab === "card2" && card2Enabled ? rawCard2 : rawCard1;
-  const clickUrl = `https://my.click.uz/clickp2p/${targetCardRaw}?amount=${totalPrice}`;
-  const paymeUrl = `https://payme.uz/fallback/pay/?card=${targetCardRaw}&amount=${totalPrice * 100}`;
-  const uzumUrl = `https://uzumbank.uz/transfer`;
+  const clickUrl = "https://my.click.uz/";
+  const paymeUrl = "https://payme.uz/";
+  const uzumUrl = "https://uzumbank.uz/";
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;

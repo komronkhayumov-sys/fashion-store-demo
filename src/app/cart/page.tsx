@@ -218,9 +218,9 @@ export default function CartPage() {
   const activeCardBank = activeCardTab === "card2" && card2Enabled ? card2Bank : card1Bank;
   const targetCardRaw = activeCardNumber.replace(/\s+/g, "");
 
-  const clickUrl = `https://my.click.uz/clickp2p/${targetCardRaw}?amount=${totalPrice}`;
-  const paymeUrl = `https://payme.uz/fallback/pay/?card=${targetCardRaw}&amount=${totalPrice * 100}`;
-  const uzumUrl = `https://uzumbank.uz`;
+  const clickUrl = "https://my.click.uz/";
+  const paymeUrl = "https://payme.uz/";
+  const uzumUrl = "https://uzumbank.uz/";
 
   const handleCopyCard = (customNum?: string) => {
     const toCopy = (customNum || targetCardRaw).replace(/\s+/g, "");
@@ -233,15 +233,8 @@ export default function CartPage() {
 
   const handleSelectPaymentMethod = (method: PaymentMethod) => {
     setPaymentMethod(method);
-    if (method === "click") {
+    if (method !== "cash") {
       handleCopyCard();
-      window.open(clickUrl, "_blank");
-    } else if (method === "payme") {
-      handleCopyCard();
-      window.open(paymeUrl, "_blank");
-    } else if (method === "uzum") {
-      handleCopyCard();
-      window.open(uzumUrl, "_blank");
     }
   };
 
@@ -524,7 +517,7 @@ export default function CartPage() {
 
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   <a
-                    href={`https://my.click.uz/clickp2p/${targetCardRaw}?amount=${orderSuccess.totalAmount || totalPrice}`}
+                    href={clickUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => handleCopyCard()}
@@ -534,7 +527,7 @@ export default function CartPage() {
                     <ExternalLink className="w-3 h-3" />
                   </a>
                   <a
-                    href={`https://payme.uz/fallback/pay/?card=${targetCardRaw}&amount=${(orderSuccess.totalAmount || totalPrice) * 100}`}
+                    href={paymeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => handleCopyCard()}

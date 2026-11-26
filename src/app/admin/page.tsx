@@ -86,6 +86,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [isDatabaseConnected, setIsDatabaseConnected] = useState<boolean | null>(null);
+  const [dbErrorMsg, setDbErrorMsg] = useState<string>("");
   const [showDbGuideModal, setShowDbGuideModal] = useState(false);
 
   // Product Add/Edit Modal
@@ -348,6 +349,7 @@ export default function AdminPage() {
       if (settData.success && settData.settings) {
         if (settData.isDatabaseConnected !== undefined) {
           setIsDatabaseConnected(Boolean(settData.isDatabaseConnected));
+          setDbErrorMsg(settData.dbError || "");
         }
 
         let cachedSettings: Partial<StoreSettings> | null = null;
@@ -2003,15 +2005,21 @@ export default function AdminPage() {
 
         {/* Database Connection Status Alert Banner */}
         {isDatabaseConnected === false && (
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in shadow-xs">
+          <div className={`p-3.5 sm:p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in shadow-xs ${
+            isDark
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+              : "bg-amber-50 border-amber-300 text-amber-900"
+          }`}>
             <div className="flex items-start sm:items-center gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+              <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 sm:mt-0 ${isDark ? "text-amber-400" : "text-amber-600"}`} />
               <div>
-                <p className="font-bold text-amber-200">
+                <p className={`font-bold ${isDark ? "text-amber-200" : "text-amber-950"}`}>
                   {lang === "ru" ? "База данных Supabase не подключена" : "Supabase ma'lumotlar bazasi ulanmagan"}
                 </p>
-                <p className="text-[11px] text-amber-300/80">
-                  {lang === "ru"
+                <p className={`text-[11px] ${isDark ? "text-amber-300/80" : "text-amber-800"}`}>
+                  {dbErrorMsg
+                    ? `Sabab: ${dbErrorMsg}`
+                    : lang === "ru"
                     ? "Изменения сохраняются в памяти сервера. Для постоянного сохранения данных на Vercel подключите бесплатную базу Supabase."
                     : "O'zgarishlar vaqtinchalik xotirada saqlanmoqda. Vercel serverless-da doimiy saqlash uchun bepul Supabase bazasini ulab qo'ying."}
                 </p>
@@ -2020,9 +2028,13 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setShowDbGuideModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-200 font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer shadow-xs active:scale-98"
+              className={`px-3.5 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer shadow-xs active:scale-98 ${
+                isDark
+                  ? "bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/30 text-amber-200"
+                  : "bg-amber-100 hover:bg-amber-200 border-amber-400 text-amber-950"
+              }`}
             >
-              <Database className="w-3.5 h-3.5 text-amber-400" />
+              <Database className={`w-3.5 h-3.5 ${isDark ? "text-amber-400" : "text-amber-700"}`} />
               <span>{lang === "ru" ? "Инструкция подключения" : "Bazani ulash yo'riqnomasi"}</span>
             </button>
           </div>
@@ -2466,7 +2478,7 @@ export default function AdminPage() {
                       {lang === "ru" ? "Доля категорий" : "Kategoriyalar ulushi"}
                     </h4>
                     <span className="text-[10px] font-semibold text-purple-400">
-                      {salesAnalytics.topCategories.length} taifa
+                      {salesAnalytics.topCategories.length} toifa
                     </span>
                   </div>
 

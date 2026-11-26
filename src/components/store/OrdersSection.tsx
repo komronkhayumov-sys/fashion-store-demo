@@ -112,8 +112,8 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
     const ord = selectedOrder;
     const isDelivered = ord.status === "delivered";
     const isConfirmed = ord.status === "confirmed" || isDelivered;
-    const clickUrl = `https://my.click.uz/clickp2p/8600123456789999?amount=${ord.totalAmount}`;
-    const paymeUrl = `https://payme.uz/fallback/pay/?card=8600123456789999&amount=${ord.totalAmount * 100}`;
+    const clickUrl = "https://my.click.uz/";
+    const paymeUrl = "https://payme.uz/";
 
     return (
       <div className="space-y-5 animate-fade-in max-w-3xl mx-auto">

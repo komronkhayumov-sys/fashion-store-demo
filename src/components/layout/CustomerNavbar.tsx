@@ -88,7 +88,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full max-w-[100vw] overflow-x-clip backdrop-blur-xl bg-white/95 dark:bg-[#0f172a]/95 border-b border-[#E2E8F0] dark:border-slate-800 transition-colors shadow-xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 lg:gap-3">
         {/* Left: Brand Identity matching user mockup */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <button
@@ -142,7 +142,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           <button
             type="button"
             onClick={() => onSectionChange("katalog")}
-            className={`h-9 px-3 lg:px-3.5 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
+            className={`h-9 px-2.5 xl:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
               isKatalogActive
                 ? "bg-violet-700 text-white shadow-xs font-black"
                 : "text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50"
@@ -156,7 +156,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           <button
             type="button"
             onClick={() => onSectionChange("branches")}
-            className={`h-9 px-3 lg:px-3.5 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
+            className={`h-9 px-2.5 xl:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
               activeSection === "branches"
                 ? "bg-violet-700 text-white shadow-xs font-black"
                 : "text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50"
@@ -179,7 +179,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           <button
             type="button"
             onClick={() => onSectionChange("ai-mode")}
-            className={`h-9 px-3 lg:px-3.5 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
+            className={`h-9 px-2.5 xl:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
               activeSection === "ai-mode"
                 ? "bg-violet-700 text-white shadow-xs font-black"
                 : "text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50"
@@ -193,7 +193,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           <button
             type="button"
             onClick={() => onSectionChange("orders")}
-            className={`h-9 px-3 lg:px-3.5 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
+            className={`h-9 px-2.5 xl:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
               activeSection === "orders"
                 ? "bg-violet-700 text-white shadow-xs font-black"
                 : "text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50"
@@ -207,7 +207,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           <button
             type="button"
             onClick={() => onSectionChange("profile")}
-            className={`h-9 px-3 lg:px-3.5 rounded-xl text-xs lg:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
+            className={`h-9 px-2.5 xl:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
               activeSection === "profile"
                 ? "bg-violet-700 text-white shadow-xs font-black"
                 : "text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50"
@@ -230,7 +230,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
                 el?.focus();
               }, 100);
             }}
-            className="lg:hidden p-1.5 sm:p-2 rounded-xl text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-[#1e293b] border border-[#E2E8F0] dark:border-slate-800 transition-all cursor-pointer shrink-0"
+            className="xl:hidden p-1.5 sm:p-2 rounded-xl text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-[#1e293b] border border-[#E2E8F0] dark:border-slate-800 transition-all cursor-pointer shrink-0"
             title={isUz ? "Qidiruv" : "Поиск"}
             aria-label="Search"
           >
@@ -238,12 +238,12 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           </button>
 
           {/* Desktop Search Field */}
-          <div className="hidden lg:flex items-center relative">
+          <div className="hidden xl:flex items-center relative">
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F1F5F9] dark:bg-[#1e293b] border transition-all ${
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[#F1F5F9] dark:bg-[#1e293b] border transition-all ${
                 isSearchFocused
-                  ? "border-[#2563EB] ring-2 ring-blue-100 dark:ring-blue-900/40 w-64"
-                  : "border-[#E2E8F0] dark:border-slate-700 w-44 xl:w-52"
+                  ? "border-[#2563EB] ring-2 ring-blue-100 dark:ring-blue-900/40 w-52"
+                  : "border-[#E2E8F0] dark:border-slate-700 w-36 2xl:w-48"
               }`}
             >
               <Search className="w-4 h-4 text-[#94A3B8] shrink-0" />
@@ -339,7 +339,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
 
           {/* Security / Info Shield Icon */}
           <div
-            className="hidden sm:flex p-2 rounded-xl text-[#64748B] dark:text-slate-400 border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-[#1e293b]"
+            className="hidden 2xl:flex p-2 rounded-xl text-[#64748B] dark:text-slate-400 border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-[#1e293b]"
             title="100% Original Mahsulotlar Kafolati"
           >
             <ShieldCheck className="w-4 h-4 text-[#10B981]" />
@@ -370,7 +370,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
 
       {/* Mobile Search Expandable Drawer */}
       {isMobileSearchOpen && (
-        <div className="lg:hidden px-4 pb-3 pt-1 border-t border-[#E2E8F0] dark:border-slate-800 animate-fade-in bg-white/95 dark:bg-[#0f172a]/95">
+        <div className="xl:hidden px-4 pb-3 pt-1 border-t border-[#E2E8F0] dark:border-slate-800 animate-fade-in bg-white/95 dark:bg-[#0f172a]/95">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F1F5F9] dark:bg-[#1e293b] border border-[#2563EB]">
             <Search className="w-4 h-4 text-[#94A3B8] shrink-0" />
             <input

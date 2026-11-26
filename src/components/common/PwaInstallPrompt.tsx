@@ -77,7 +77,14 @@ export default function PwaInstallPrompt({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 1. Check if already running in standalone PWA mode
+    // 1. Check if already running in standalone PWA mode or dismissed in this session
+    try {
+      if (sessionStorage.getItem(`moda_pwa_dismissed_${target}`) === "1") {
+        setIsDismissed(true);
+        return;
+      }
+    } catch {}
+
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       window.matchMedia("(display-mode: fullscreen)").matches ||
@@ -86,6 +93,14 @@ export default function PwaInstallPrompt({
     if (standalone) {
       setIsStandaloneApp(true);
       return;
+    }
+
+    // Keep minimized on action pages (/cart, /orders, /product/*) and mobile store view so primary CTAs are never occluded
+    const pathname = window.location.pathname;
+    const isActionPage = /^\/(cart|orders|product)/.test(pathname);
+    const isSmallViewport = window.innerWidth < 640;
+    if (!isAdmin && (isActionPage || isSmallViewport)) {
+      setIsMinimized(true);
     }
 
     // 2. Detect device and browser environment
@@ -168,27 +183,40 @@ export default function PwaInstallPrompt({
     <>
       {/* 1. Minimized Floating Quick Install Badge */}
       {!isAdmin && showPrompt && isMinimized && (
-        <button
-          type="button"
-          onClick={() => {
-            setIsMinimized(false);
-            triggerInstallFlow();
-          }}
-          className="fixed bottom-20 left-3 md:bottom-8 md:left-8 z-40 px-3.5 py-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-blue-400/40 animate-scale-in cursor-pointer hover:scale-105 active:scale-95 transition-all"
-        >
-          <div className="w-5 h-5 rounded-full overflow-hidden relative shrink-0 border border-white/40">
-            <Image src="/moda-logo.svg" alt="MODA UZ" fill className="object-cover" unoptimized />
-          </div>
-          <span>
-            {isRu ? "📲 Установить приложение" : "📲 Ilovani o'rnatish"}
-          </span>
-          <Download className="w-3.5 h-3.5 animate-bounce" />
-        </button>
+        <div className="fixed bottom-20 left-3 md:bottom-6 md:left-6 z-30 flex items-center gap-1 animate-scale-in">
+          <button
+            type="button"
+            onClick={() => {
+              triggerInstallFlow();
+            }}
+            className="px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-bold text-[11px] shadow-lg flex items-center gap-1.5 border border-blue-400/40 cursor-pointer hover:scale-105 active:scale-95 transition-all"
+          >
+            <div className="w-4 h-4 rounded-full overflow-hidden relative shrink-0 border border-white/40">
+              <Image src="/moda-logo.svg" alt="MODA UZ" fill className="object-cover" unoptimized />
+            </div>
+            <span>{isRu ? "Приложение" : "Ilova"}</span>
+            <Download className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsDismissed(true);
+              setShowPrompt(false);
+              try {
+                sessionStorage.setItem(`moda_pwa_dismissed_${target}`, "1");
+              } catch {}
+            }}
+            aria-label={isRu ? "Закрыть" : "Yopish"}
+            className="p-1.5 rounded-full bg-slate-900/90 text-zinc-300 hover:text-white border border-white/15 shadow-md cursor-pointer"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
       )}
 
-      {/* 2. Floating Recommendation Banner (Bottom above bottom nav on mobile, bottom-left on desktop) */}
+      {/* 2. Floating Recommendation Banner (Desktop home only; stays unobtrusive) */}
       {!isAdmin && showPrompt && !isMinimized && (
-        <div className="fixed bottom-20 left-3 right-3 sm:left-6 sm:right-auto sm:w-[390px] md:bottom-8 md:left-8 z-40 animate-fade-in">
+        <div className="fixed bottom-20 left-3 right-20 sm:left-6 sm:right-auto sm:w-[370px] md:bottom-8 md:left-8 z-30 animate-fade-in">
           <div className="p-3.5 sm:p-4 rounded-3xl bg-slate-900/98 backdrop-blur-xl border border-blue-500/40 text-white shadow-2xl flex items-center justify-between gap-3 ring-1 ring-blue-500/20">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-11 h-11 rounded-2xl overflow-hidden relative shrink-0 border border-blue-400/50 shadow-md bg-black">
@@ -227,6 +255,9 @@ export default function PwaInstallPrompt({
                 onClick={() => {
                   setIsDismissed(true);
                   setShowPrompt(false);
+                  try {
+                    sessionStorage.setItem(`moda_pwa_dismissed_${target}`, "1");
+                  } catch {}
                 }}
                 className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 title={isRu ? "Закрыть" : "Yopish"}

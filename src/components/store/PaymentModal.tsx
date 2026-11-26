@@ -45,11 +45,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   // Payment app links
   // Click P2P payment url / app intent
-  const clickUrl = `https://my.click.uz/clickp2p/${rawCard}?amount=${totalAmount}`;
-  // Payme transfer url
-  const paymeUrl = `https://payme.uz/fallback/pay/?card=${rawCard}&amount=${totalAmount * 100}`;
-  // Uzum bank fallback / universal link
-  const uzumUrl = `https://uzumbank.uz/transfer`;
+  const clickUrl = "https://my.click.uz/";
+  const paymeUrl = "https://payme.uz/";
+  const uzumUrl = "https://uzumbank.uz/";
 
   const handleOpenApp = (method: PaymentMethod) => {
     onSelectMethod(method);
