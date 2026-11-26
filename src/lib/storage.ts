@@ -7,6 +7,22 @@ import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export { isSupabaseConfigured };
 
+export async function checkSupabaseHealth(): Promise<{ connected: boolean; error?: string }> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return { connected: false, error: "Supabase env kalitlari (URL / KEY) kiritilmagan" };
+  }
+  try {
+    const { error } = await supabase.from("settings").select("id").limit(1);
+    if (error) {
+      return { connected: false, error: error.message };
+    }
+    return { connected: true };
+  } catch (err: unknown) {
+    return { connected: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 // Detect serverless environment (Vercel, AWS Lambda, Netlify, etc.)
 const isServerless = Boolean(
   process.env.VERCEL ||
@@ -813,17 +829,14 @@ export async function saveDemoProfile(input: Partial<DemoProfile> & { slug: stri
 
   const supabase = getSupabase();
   if (supabase) {
-    try {
-      const { error } = await supabase.from("settings").upsert({
-        id: `demo_profile_${clean}`,
-        data: merged,
-        updated_at: now,
-      });
-      if (error) {
-        console.error(`[storage] Supabase saveDemoProfile(${clean}) error:`, error);
-      }
-    } catch (err) {
-      console.warn(`[storage] Supabase saveDemoProfile(${clean}) error:`, err);
+    const { error } = await supabase.from("settings").upsert({
+      id: `demo_profile_${clean}`,
+      data: merged,
+      updated_at: now,
+    });
+    if (error) {
+      console.error(`[storage] Supabase saveDemoProfile(${clean}) error:`, error);
+      throw new Error(`Supabase xatosi: ${error.message}`);
     }
   }
 

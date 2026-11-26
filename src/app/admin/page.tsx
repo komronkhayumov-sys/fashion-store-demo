@@ -87,6 +87,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [isDatabaseConnected, setIsDatabaseConnected] = useState<boolean | null>(null);
+  const [dbErrorMsg, setDbErrorMsg] = useState<string>("");
   const [showDbGuideModal, setShowDbGuideModal] = useState(false);
 
   // Multi-Client Demo Profiles State
@@ -383,6 +384,7 @@ export default function AdminPage() {
       if (settData.success && settData.settings) {
         if (settData.isDatabaseConnected !== undefined) {
           setIsDatabaseConnected(Boolean(settData.isDatabaseConnected));
+          setDbErrorMsg(settData.dbError || "");
         }
 
         let cachedSettings: Partial<StoreSettings> | null = null;
@@ -2272,7 +2274,9 @@ export default function AdminPage() {
                   {lang === "ru" ? "База данных Supabase не подключена" : "Supabase ma'lumotlar bazasi ulanmagan"}
                 </p>
                 <p className="text-[11px] text-amber-300/80">
-                  {lang === "ru"
+                  {dbErrorMsg
+                    ? `Sabab: ${dbErrorMsg}`
+                    : lang === "ru"
                     ? "Изменения сохраняются в памяти сервера. Для постоянного сохранения данных на Vercel подключите бесплатную базу Supabase."
                     : "O'zgarishlar vaqtinchalik xotirada saqlanmoqda. Vercel serverless-da doimiy saqlash uchun bepul Supabase bazasini ulab qo'ying."}
                 </p>
