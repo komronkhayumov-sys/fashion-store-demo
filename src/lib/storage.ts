@@ -140,23 +140,29 @@ export async function getSettings(): Promise<StoreSettings> {
         return loaded;
       }
 
-      // If settings row does not exist in Supabase yet, auto-seed it with initial settings
-      const initialSettings: StoreSettings = {
-        ...DEFAULT_SETTINGS,
-        adminPin: process.env.ADMIN_PIN || DEFAULT_SETTINGS.adminPin,
-      };
-      const stored = safeReadFile<StoreSettings>(SETTINGS_FILE, "settings.json", initialSettings);
-      const seedSettings: StoreSettings = {
-        ...initialSettings,
-        ...(stored || {}),
-      };
-      await supabase.from("settings").upsert({
-        id: "store_settings",
-        data: seedSettings,
-        updated_at: new Date().toISOString(),
-      });
-      memorySettings = seedSettings;
-      return seedSettings;
+      // ONLY seed if row truly does not exist in Supabase yet (PGRST116 = 0 rows)
+      if (error?.code === "PGRST116") {
+        const initialSettings: StoreSettings = {
+          ...DEFAULT_SETTINGS,
+          adminPin: process.env.ADMIN_PIN || DEFAULT_SETTINGS.adminPin,
+        };
+        const stored = safeReadFile<StoreSettings>(SETTINGS_FILE, "settings.json", initialSettings);
+        const seedSettings: StoreSettings = {
+          ...initialSettings,
+          ...(stored || {}),
+        };
+        await supabase.from("settings").upsert({
+          id: "store_settings",
+          data: seedSettings,
+          updated_at: new Date().toISOString(),
+        });
+        memorySettings = seedSettings;
+        return seedSettings;
+      }
+
+      if (error) {
+        console.warn("[storage] Supabase getSettings error:", error.message);
+      }
     } catch (err) {
       console.warn("[storage] Supabase getSettings error:", err);
     }
@@ -190,14 +196,14 @@ export async function saveSettings(updates: Partial<StoreSettings>): Promise<Sto
 
   const supabase = getSupabase();
   if (supabase) {
-    try {
-      await supabase.from("settings").upsert({
-        id: "store_settings",
-        data: memorySettings,
-        updated_at: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.warn("[storage] Supabase saveSettings error:", err);
+    const { error } = await supabase.from("settings").upsert({
+      id: "store_settings",
+      data: memorySettings,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      console.error("[storage] Supabase saveSettings error:", error);
+      throw new Error(`Supabase saqlash xatosi: ${error.message}`);
     }
   }
 
@@ -499,27 +505,27 @@ export async function saveProduct(productData: Partial<Product> & { name: string
 
   const supabase = getSupabase();
   if (supabase) {
-    try {
-      await supabase.from("products").upsert({
-        id: savedProduct.id,
-        name: savedProduct.name,
-        name_ru: savedProduct.nameRu,
-        description: savedProduct.description,
-        description_ru: savedProduct.descriptionRu,
-        price: savedProduct.price,
-        old_price: savedProduct.oldPrice,
-        category: savedProduct.category,
-        image: savedProduct.image,
-        images: savedProduct.images || [],
-        sizes: savedProduct.sizes,
-        colors: savedProduct.colors || [],
-        is_available: savedProduct.isAvailable,
-        is_featured: savedProduct.isFeatured,
-        badge: savedProduct.badge,
-        created_at: savedProduct.createdAt,
-      });
-    } catch (err) {
-      console.warn("[storage] Supabase saveProduct error:", err);
+    const { error } = await supabase.from("products").upsert({
+      id: savedProduct.id,
+      name: savedProduct.name,
+      name_ru: savedProduct.nameRu,
+      description: savedProduct.description,
+      description_ru: savedProduct.descriptionRu,
+      price: savedProduct.price,
+      old_price: savedProduct.oldPrice,
+      category: savedProduct.category,
+      image: savedProduct.image,
+      images: savedProduct.images || [],
+      sizes: savedProduct.sizes,
+      colors: savedProduct.colors || [],
+      is_available: savedProduct.isAvailable,
+      is_featured: savedProduct.isFeatured,
+      badge: savedProduct.badge,
+      created_at: savedProduct.createdAt,
+    });
+    if (error) {
+      console.error("[storage] Supabase saveProduct error:", error);
+      throw new Error(`Supabase mahsulot saqlash xatosi: ${error.message}`);
     }
   }
 

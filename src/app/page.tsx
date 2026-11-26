@@ -116,6 +116,9 @@ export default function HomePage() {
         }
         if (settData.success && settData.settings) {
           setSettings(settData.settings);
+          if (settData.settings.storeName) {
+            document.title = `${settData.settings.storeName} — Online Fashion Store`;
+          }
           try {
             localStorage.setItem("moda_store_settings_cache", JSON.stringify(settData.settings));
           } catch {}
@@ -126,8 +129,28 @@ export default function HomePage() {
     }
     loadData();
 
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") loadData();
+    };
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === "moda_store_settings_cache" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === "object") setSettings(parsed);
+        } catch {}
+      }
+      if (e.key === "moda_store_products_cache" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setProducts(parsed);
+        } catch {}
+      }
+    };
+
     // Re-sync when switching back to this tab (e.g. after updating settings in /admin)
     window.addEventListener("focus", loadData);
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("storage", handleStorageSync);
 
     // Load language preference
     const savedLang = localStorage.getItem("moda_lang") || localStorage.getItem("button_lang");
@@ -237,6 +260,8 @@ export default function HomePage() {
 
     return () => {
       window.removeEventListener("focus", loadData);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("storage", handleStorageSync);
     };
   }, []);
 

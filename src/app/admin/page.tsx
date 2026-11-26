@@ -276,37 +276,46 @@ export default function AdminPage() {
       const orderData = await orderRes.json();
       const settData = await settRes.json();
       const custData = await custRes.json();
+      const isCloudDbActive = Boolean(settData?.isDatabaseConnected);
 
       if (prodData.success && Array.isArray(prodData.products)) {
-        let cachedProducts: Product[] = [];
-        try {
-          const raw = localStorage.getItem("moda_admin_products_cache");
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length > 0) cachedProducts = parsed;
+        if (isCloudDbActive) {
+          setProducts(prodData.products);
+          try {
+            localStorage.setItem("moda_admin_products_cache", JSON.stringify(prodData.products));
+            localStorage.setItem("moda_store_products_cache", JSON.stringify(prodData.products));
+          } catch {}
+        } else {
+          let cachedProducts: Product[] = [];
+          try {
+            const raw = localStorage.getItem("moda_admin_products_cache");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) cachedProducts = parsed;
+            }
+          } catch {}
+
+          const prodMap = new Map<string, Product>();
+          cachedProducts.forEach((p) => prodMap.set(p.id, p));
+          prodData.products.forEach((p: Product) => prodMap.set(p.id, p));
+          const mergedProducts = Array.from(prodMap.values());
+          setProducts(mergedProducts);
+          try {
+            localStorage.setItem("moda_admin_products_cache", JSON.stringify(mergedProducts));
+            localStorage.setItem("moda_store_products_cache", JSON.stringify(mergedProducts));
+          } catch {}
+
+          // Auto-heal missing products if server had a cold start without DB
+          const missingOnServer = mergedProducts.filter((mp) => !prodData.products.some((sp: Product) => sp.id === mp.id));
+          if (missingOnServer.length > 0) {
+            missingOnServer.forEach((mp) => {
+              fetch("/api/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
+                body: JSON.stringify(mp),
+              }).catch(() => {});
+            });
           }
-        } catch {}
-
-        const prodMap = new Map<string, Product>();
-        cachedProducts.forEach((p) => prodMap.set(p.id, p));
-        prodData.products.forEach((p: Product) => prodMap.set(p.id, p));
-        const mergedProducts = Array.from(prodMap.values());
-        setProducts(mergedProducts);
-        try {
-          localStorage.setItem("moda_admin_products_cache", JSON.stringify(mergedProducts));
-          localStorage.setItem("moda_store_products_cache", JSON.stringify(mergedProducts));
-        } catch {}
-
-        // Auto-heal missing products if server had a cold start
-        const missingOnServer = mergedProducts.filter((mp) => !prodData.products.some((sp: Product) => sp.id === mp.id));
-        if (missingOnServer.length > 0) {
-          missingOnServer.forEach((mp) => {
-            fetch("/api/products", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
-              body: JSON.stringify(mp),
-            }).catch(() => {});
-          });
         }
       }
       if (orderData.success) {
@@ -352,35 +361,45 @@ export default function AdminPage() {
           setDbErrorMsg(settData.dbError || "");
         }
 
-        let cachedSettings: Partial<StoreSettings> | null = null;
-        try {
-          const raw = localStorage.getItem("moda_admin_settings_cache");
-          if (raw) cachedSettings = JSON.parse(raw);
-        } catch {}
+        if (isCloudDbActive) {
+          // Live Supabase is authoritative source of truth
+          setSettings(settData.settings);
+          setProfileForm(settData.settings);
+          try {
+            localStorage.setItem("moda_admin_settings_cache", JSON.stringify(settData.settings));
+            localStorage.setItem("moda_store_settings_cache", JSON.stringify(settData.settings));
+          } catch {}
+        } else {
+          let cachedSettings: Partial<StoreSettings> | null = null;
+          try {
+            const raw = localStorage.getItem("moda_admin_settings_cache");
+            if (raw) cachedSettings = JSON.parse(raw);
+          } catch {}
 
-        const mergedSettings: StoreSettings = {
-          ...settData.settings,
-          ...(cachedSettings || {}),
-        };
+          const mergedSettings: StoreSettings = {
+            ...settData.settings,
+            ...(cachedSettings || {}),
+          };
 
-        setSettings(mergedSettings);
-        setProfileForm(mergedSettings);
-        try {
-          localStorage.setItem("moda_admin_settings_cache", JSON.stringify(mergedSettings));
-          localStorage.setItem("moda_store_settings_cache", JSON.stringify(mergedSettings));
-        } catch {}
+          setSettings(mergedSettings);
+          setProfileForm(mergedSettings);
+          try {
+            localStorage.setItem("moda_admin_settings_cache", JSON.stringify(mergedSettings));
+            localStorage.setItem("moda_store_settings_cache", JSON.stringify(mergedSettings));
+          } catch {}
 
-        // If server cold started without database and lost custom settings, auto-heal sync back
-        if (cachedSettings && Object.keys(cachedSettings).length > 0) {
-          const hasCustomChange = Object.entries(cachedSettings).some(
-            ([k, v]) => v !== undefined && JSON.stringify(v) !== JSON.stringify((settData.settings as Record<string, unknown>)[k])
-          );
-          if (hasCustomChange) {
-            fetch("/api/settings", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
-              body: JSON.stringify(cachedSettings),
-            }).catch(() => {});
+          // If server cold started without database and lost custom settings, auto-heal sync back
+          if (cachedSettings && Object.keys(cachedSettings).length > 0) {
+            const hasCustomChange = Object.entries(cachedSettings).some(
+              ([k, v]) => v !== undefined && JSON.stringify(v) !== JSON.stringify((settData.settings as Record<string, unknown>)[k])
+            );
+            if (hasCustomChange) {
+              fetch("/api/settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
+                body: JSON.stringify(cachedSettings),
+              }).catch(() => {});
+            }
           }
         }
       }
@@ -513,11 +532,63 @@ export default function AdminPage() {
     return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
 
+  // Client-side image compression so uploads never exceed Vercel 4.5MB payload limit
+  const compressImage = async (file: File, maxSizePx = 1000, quality = 0.82): Promise<File> => {
+    if (!file.type.startsWith("image/") || file.type === "image/gif" || file.size < 100 * 1024) {
+      return file;
+    }
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+        if (width > maxSizePx || height > maxSizePx) {
+          if (width > height) {
+            height = Math.round((height * maxSizePx) / width);
+            width = maxSizePx;
+          } else {
+            width = Math.round((width * maxSizePx) / height);
+            height = maxSizePx;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const outType = file.type === "image/png" ? "image/png" : "image/jpeg";
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) {
+              resolve(file);
+              return;
+            }
+            const ext = outType === "image/png" ? ".png" : ".jpg";
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, "") + ext, { type: outType }));
+          },
+          outType,
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file);
+      };
+      img.src = objectUrl;
+    });
+  };
+
   // Image upload handler
-  const handleUploadImage = async (file: File): Promise<string | null> => {
+  const handleUploadImage = async (file: File, maxSizePx = 1000): Promise<string | null> => {
     try {
+      const processedFile = await compressImage(file, maxSizePx, 0.82);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", processedFile);
       const res = await fetch("/api/upload", {
         method: "POST",
         headers: { "x-admin-pin": pin },
@@ -533,15 +604,16 @@ export default function AdminPage() {
     }
   };
 
-  // Brand Logo upload handler
+  // Brand Logo upload handler (auto-saves immediately to cloud DB)
   const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingLogo(true);
     try {
-      const uploadedUrl = await handleUploadImage(file);
+      const uploadedUrl = await handleUploadImage(file, 512);
       if (uploadedUrl) {
         setProfileForm((prev) => ({ ...prev, storeAvatar: uploadedUrl }));
+        await handleSaveSettings({ storeAvatar: uploadedUrl });
       }
     } catch (err) {
       alert(lang === "ru" ? "Ошибка при загрузке логотипа" : "Logo yuklashda xatolik yuz berdi");
@@ -553,8 +625,9 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetLogo = () => {
+  const handleResetLogo = async () => {
     setProfileForm((prev) => ({ ...prev, storeAvatar: "/moda-logo.svg" }));
+    await handleSaveSettings({ storeAvatar: "/moda-logo.svg" });
   };
 
   // Multi-image upload handler (up to 10 images)
@@ -4191,9 +4264,21 @@ export default function AdminPage() {
             </div>
 
             <form
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                handleSaveSettings(profileForm);
+                const normalizeLink = (val: string | undefined, base: string) => {
+                  const v = (val || "").trim();
+                  if (!v) return "";
+                  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+                  return `${base}/${v.replace(/^@/, "")}`;
+                };
+                const cleanedProfile: Partial<StoreSettings> = {
+                  ...profileForm,
+                  instagramUrl: normalizeLink(profileForm.instagramUrl, "https://instagram.com"),
+                  telegramUrl: normalizeLink(profileForm.telegramUrl, "https://t.me"),
+                };
+                handleSaveSettings(cleanedProfile);
               }}
               className="space-y-6"
             >
@@ -4328,7 +4413,7 @@ export default function AdminPage() {
                   <div>
                     <label className={`block text-[11px] font-bold mb-1 ${subTextClass}`}>{t.profile.adminEmail}</label>
                     <input
-                      type="email"
+                      type="text"
                       value={profileForm.adminEmail || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, adminEmail: e.target.value })}
                       placeholder="admin@modauz.demo"
@@ -4368,20 +4453,20 @@ export default function AdminPage() {
                   <div>
                     <label className={`block text-[11px] font-bold mb-1 ${subTextClass}`}>{t.profile.instagramUrl}</label>
                     <input
-                      type="url"
+                      type="text"
                       value={profileForm.instagramUrl || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, instagramUrl: e.target.value })}
-                      placeholder="https://www.instagram.com/modauz_demo/"
+                      placeholder="https://www.instagram.com/modauz_demo/ yoki @username"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
                   <div>
                     <label className={`block text-[11px] font-bold mb-1 ${subTextClass}`}>{t.profile.telegramUrl}</label>
                     <input
-                      type="url"
+                      type="text"
                       value={profileForm.telegramUrl || ""}
                       onChange={(e) => setProfileForm({ ...profileForm, telegramUrl: e.target.value })}
-                      placeholder="https://t.me/modauz_demo"
+                      placeholder="https://t.me/modauz_demo yoki @username"
                       className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
