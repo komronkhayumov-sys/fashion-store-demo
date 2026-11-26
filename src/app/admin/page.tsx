@@ -94,11 +94,15 @@ export default function AdminPage() {
   const [activeDemoSlug, setActiveDemoSlug] = useState<string | null>(null);
   const [isCreateDemoModalOpen, setIsCreateDemoModalOpen] = useState(false);
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
+  const [isUploadingDemoLogo, setIsUploadingDemoLogo] = useState(false);
+  const [isUploadingDemoBanner, setIsUploadingDemoBanner] = useState(false);
   const [copiedDemoSlug, setCopiedDemoSlug] = useState<string | null>(null);
   const [newDemoForm, setNewDemoForm] = useState({
     clientName: "",
     storeName: "",
     slug: "",
+    storeAvatar: "",
+    storeHeroBanner: "",
     phone1: "+998 ",
     telegramUrl: "",
     instagramUrl: "",
@@ -933,6 +937,15 @@ export default function AdminPage() {
       alert(lang === "ru" ? "Введите название магазина" : "Do'kon nomini kiriting");
       return;
     }
+
+    const normalizeSocial = (val: string, base: string) => {
+      const v = val.trim();
+      if (!v) return "";
+      if (v.startsWith("http://") || v.startsWith("https://")) return v;
+      const handle = v.replace(/^@/, "");
+      return `${base}/${handle}`;
+    };
+
     setIsCreatingDemo(true);
     try {
       const storeName = newDemoForm.storeName.trim() || newDemoForm.clientName.trim();
@@ -945,10 +958,12 @@ export default function AdminPage() {
           settings: {
             storeName,
             storeHandle: `@${rawSlug.toLowerCase().replace(/[^a-z0-9_]+/g, "_")}`,
+            storeAvatar: newDemoForm.storeAvatar || "/moda-logo.svg",
+            storeHeroBanner: newDemoForm.storeHeroBanner || "",
             storeBioUz: newDemoForm.storeBioUz.trim() || "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
             phone1: newDemoForm.phone1.trim() || "+998 90 123 45 67",
-            telegramUrl: newDemoForm.telegramUrl.trim() || "",
-            instagramUrl: newDemoForm.instagramUrl.trim() || "",
+            telegramUrl: normalizeSocial(newDemoForm.telegramUrl, "https://t.me"),
+            instagramUrl: normalizeSocial(newDemoForm.instagramUrl, "https://instagram.com"),
           },
         }),
       });
@@ -959,13 +974,29 @@ export default function AdminPage() {
           clientName: "",
           storeName: "",
           slug: "",
+          storeAvatar: "",
+          storeHeroBanner: "",
           phone1: "+998 ",
           telegramUrl: "",
           instagramUrl: "",
           storeBioUz: "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
         });
-        await handleSelectDemo(data.demo.slug, "profile");
-        setSaveSuccessMsg(lang === "ru" ? `Демо "${storeName}" создано!` : `"${storeName}" demosi yaratildi! Endi logo, media va tovarlarni to'ldiring.`);
+        const newMeta: DemoProfileMeta = {
+          slug: data.demo.slug,
+          clientName: data.demo.clientName || storeName,
+          storeName,
+          storeAvatar: data.demo.settings?.storeAvatar,
+          productsCount: 0,
+          createdAt: data.demo.createdAt,
+          updatedAt: data.demo.updatedAt,
+        };
+        setDemosList((prev) => [newMeta, ...prev.filter((d) => d.slug !== newMeta.slug)]);
+        await loadData(pin, activeDemoSlug);
+        setSaveSuccessMsg(
+          lang === "ru"
+            ? `Демо "${storeName}" создано! Нажмите «Настроить», чтобы добавить товары.`
+            : `"${storeName}" demosi yaratildi! Tovarlar qo'shish uchun kartochkadagi "Sozlash" tugmasini bosing.`
+        );
         setTimeout(() => setSaveSuccessMsg(""), 4500);
       } else {
         alert(data.error || "Xatolik");
@@ -6364,71 +6395,157 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleCreateDemo} className="space-y-4 text-xs">
-              <div>
-                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
-                  {lang === "ru" ? "Название магазина (увидит клиент) *" : "Do'kon nomi (mijoz saytida ko'rinadi) *"}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newDemoForm.storeName}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const autoSlug = val
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, "-")
-                      .replace(/^-|-$/g, "");
-                    setNewDemoForm((prev) => ({
-                      ...prev,
-                      storeName: val,
-                      slug: prev.slug === "" || prev.slug === prev.storeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-                        ? autoSlug
-                        : prev.slug,
-                    }));
-                  }}
-                  placeholder="Masalan: LOLA BOUTIQUE"
-                  className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
-                />
-              </div>
-
-              <div>
-                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
-                  {lang === "ru" ? "Ссылка (Slug) *" : "Shaxsiy havola (Link / Slug) *"}
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-mono ${subTextClass}`}>/d/</span>
-                  <input
-                    type="text"
-                    required
-                    value={newDemoForm.slug}
-                    onChange={(e) =>
-                      setNewDemoForm((prev) => ({
-                        ...prev,
-                        slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""),
-                      }))
-                    }
-                    placeholder="lola-boutique"
-                    className={`flex-1 px-3.5 py-2.5 rounded-xl font-mono focus:outline-none ${inputBgClass}`}
-                  />
+              {/* Logo & Banner Upload Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Store Logo */}
+                <div className={`p-3 rounded-2xl border space-y-2 ${itemCardBg}`}>
+                  <label className={`block font-bold ${subTextClass}`}>
+                    {lang === "ru" ? "Логотип магазина" : "Do'kon Logotipi"}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-violet-500/30 bg-zinc-900 shrink-0 relative">
+                      <Image
+                        src={newDemoForm.storeAvatar || "/moda-logo.svg"}
+                        alt="Logo preview"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <label className="flex-1 py-2 px-3 rounded-xl bg-violet-600/15 hover:bg-violet-600/25 border border-violet-500/30 text-violet-400 font-bold text-center cursor-pointer transition-all">
+                      {isUploadingDemoLogo ? "Yuklanmoqda..." : (lang === "ru" ? "Загрузить лого" : "Logo yuklash")}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploadingDemoLogo}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setIsUploadingDemoLogo(true);
+                          try {
+                            const url = await handleUploadImage(file);
+                            if (url) setNewDemoForm((prev) => ({ ...prev, storeAvatar: url }));
+                          } finally {
+                            setIsUploadingDemoLogo(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
-                  {lang === "ru" ? "Имя клиента / Заметка (только для вас)" : "Mijoz ismi / Eslatma (faqat siz ko'rasiz)"}
-                </label>
-                <input
-                  type="text"
-                  value={newDemoForm.clientName}
-                  onChange={(e) => setNewDemoForm((prev) => ({ ...prev, clientName: e.target.value }))}
-                  placeholder="Masalan: Dilnoza opa (Chorsu)"
-                  className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
-                />
+                {/* Store Banner / Media */}
+                <div className={`p-3 rounded-2xl border space-y-2 ${itemCardBg}`}>
+                  <label className={`block font-bold ${subTextClass}`}>
+                    {lang === "ru" ? "Баннер / Обложка" : "Banner / Muqova rasmi"}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-blue-500/30 bg-zinc-900 shrink-0 relative flex items-center justify-center text-zinc-500">
+                      {newDemoForm.storeHeroBanner ? (
+                        <Image
+                          src={newDemoForm.storeHeroBanner}
+                          alt="Banner preview"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                    </div>
+                    <label className="flex-1 py-2 px-3 rounded-xl bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-400 font-bold text-center cursor-pointer transition-all">
+                      {isUploadingDemoBanner ? "Yuklanmoqda..." : (lang === "ru" ? "Загрузить баннер" : "Banner yuklash")}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploadingDemoBanner}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setIsUploadingDemoBanner(true);
+                          try {
+                            const url = await handleUploadImage(file);
+                            if (url) setNewDemoForm((prev) => ({ ...prev, storeHeroBanner: url }));
+                          } finally {
+                            setIsUploadingDemoBanner(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>Telefon raqami</label>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                    {lang === "ru" ? "Название магазина *" : "Do'kon nomi *"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newDemoForm.storeName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const autoSlug = val
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/^-|-$/g, "");
+                      setNewDemoForm((prev) => ({
+                        ...prev,
+                        storeName: val,
+                        slug: prev.slug === "" || prev.slug === prev.storeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+                          ? autoSlug
+                          : prev.slug,
+                      }));
+                    }}
+                    placeholder="Masalan: LOLA BOUTIQUE"
+                    className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                    {lang === "ru" ? "Ссылка (Slug) *" : "Shaxsiy havola (Slug) *"}
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[11px] font-mono ${subTextClass}`}>/d/</span>
+                    <input
+                      type="text"
+                      required
+                      value={newDemoForm.slug}
+                      onChange={(e) =>
+                        setNewDemoForm((prev) => ({
+                          ...prev,
+                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""),
+                        }))
+                      }
+                      placeholder="lola-boutique"
+                      className={`flex-1 px-3 py-2.5 rounded-xl font-mono focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                    {lang === "ru" ? "Имя клиента (заметка)" : "Mijoz ismi (eslatma)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={newDemoForm.clientName}
+                    onChange={(e) => setNewDemoForm((prev) => ({ ...prev, clientName: e.target.value }))}
+                    placeholder="Masalan: Dilnoza opa"
+                    className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                    {lang === "ru" ? "Телефон номер" : "Telefon raqami"}
+                  </label>
                   <input
                     type="text"
                     value={newDemoForm.phone1}
@@ -6437,16 +6554,42 @@ export default function AdminPage() {
                     className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>Instagram / Telegram</label>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>Instagram</label>
                   <input
                     type="text"
                     value={newDemoForm.instagramUrl}
                     onChange={(e) => setNewDemoForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
-                    placeholder="https://instagram.com/..."
+                    placeholder="@lola_boutique yoki https://..."
                     className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
                   />
                 </div>
+                <div>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>Telegram</label>
+                  <input
+                    type="text"
+                    value={newDemoForm.telegramUrl}
+                    onChange={(e) => setNewDemoForm((prev) => ({ ...prev, telegramUrl: e.target.value }))}
+                    placeholder="@lola_boutique yoki https://t.me/..."
+                    className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                  {lang === "ru" ? "Описание магазина (Bio)" : "Do'kon haqida qisqacha (Bio)"}
+                </label>
+                <input
+                  type="text"
+                  value={newDemoForm.storeBioUz}
+                  onChange={(e) => setNewDemoForm((prev) => ({ ...prev, storeBioUz: e.target.value }))}
+                  placeholder="Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni"
+                  className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                />
               </div>
 
               <div className="flex gap-2.5 pt-2">
@@ -6459,12 +6602,12 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isCreatingDemo}
+                  disabled={isCreatingDemo || isUploadingDemoLogo || isUploadingDemoBanner}
                   className="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold cursor-pointer shadow-md disabled:opacity-60"
                 >
                   {isCreatingDemo
                     ? (lang === "ru" ? "Создание..." : "Yaratilmoqda...")
-                    : (lang === "ru" ? "Создать и настроить →" : "Yaratish va sozlash →")}
+                    : (lang === "ru" ? "Создать демо ✓" : "Demoni yaratish ✓")}
                 </button>
               </div>
             </form>

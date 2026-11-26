@@ -814,11 +814,14 @@ export async function saveDemoProfile(input: Partial<DemoProfile> & { slug: stri
   const supabase = getSupabase();
   if (supabase) {
     try {
-      await supabase.from("settings").upsert({
+      const { error } = await supabase.from("settings").upsert({
         id: `demo_profile_${clean}`,
         data: merged,
         updated_at: now,
       });
+      if (error) {
+        console.error(`[storage] Supabase saveDemoProfile(${clean}) error:`, error);
+      }
     } catch (err) {
       console.warn(`[storage] Supabase saveDemoProfile(${clean}) error:`, err);
     }
