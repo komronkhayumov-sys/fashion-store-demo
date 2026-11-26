@@ -27,6 +27,7 @@ import {
 import { Branch, CartItem, Language, PaymentMethod, StoreSettings, Order } from "@/types";
 import { DEFAULT_SETTINGS, BRANCHES } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
+import { resolveActiveDemoSlug, getDemoCacheKeys } from "@/lib/demoClient";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
 
@@ -108,21 +109,25 @@ export default function CartPage() {
     } catch (e) {}
 
     // Settings with cache-first hydration
+    const activeDemo = resolveActiveDemoSlug();
+    const { settingsKey } = getDemoCacheKeys(activeDemo);
+    const demoQuery = activeDemo ? `?demo=${encodeURIComponent(activeDemo)}` : "";
+
     try {
-      const cachedSett = localStorage.getItem("moda_store_settings_cache") || localStorage.getItem("moda_admin_settings_cache");
+      const cachedSett = localStorage.getItem(settingsKey) || (!activeDemo ? localStorage.getItem("moda_admin_settings_cache") : null);
       if (cachedSett) {
         const parsed = JSON.parse(cachedSett);
         if (parsed && typeof parsed === "object") setSettings(parsed);
       }
     } catch {}
 
-    fetch("/api/settings", { cache: "no-store" })
+    fetch(`/api/settings${demoQuery}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.settings) {
           setSettings(data.settings);
           try {
-            localStorage.setItem("moda_store_settings_cache", JSON.stringify(data.settings));
+            localStorage.setItem(settingsKey, JSON.stringify(data.settings));
           } catch {}
         }
       })

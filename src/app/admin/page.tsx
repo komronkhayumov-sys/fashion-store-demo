@@ -60,10 +60,11 @@ import {
   Database,
   AlertTriangle,
 } from "lucide-react";
-import { Branch, Customer, Language, Order, PaymentMethod, Product, StoreSettings } from "@/types";
+import { Branch, Customer, DemoProfileMeta, Language, Order, PaymentMethod, Product, StoreSettings } from "@/types";
 import { CATEGORIES, DEFAULT_SETTINGS } from "@/constants";
 import { formatUzbekCurrency } from "@/lib/format";
 import { adminI18n } from "@/lib/i18n";
+import { compressImageFile } from "@/lib/demoClient";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
 
 export default function AdminPage() {
@@ -73,7 +74,7 @@ export default function AdminPage() {
   const [lang, setLang] = useState<Language>("uz");
   const [isDarkTheme, setIsDarkTheme] = useState(false); // Image 1 is Dark, Image 3 is Light
   const [activeMenu, setActiveMenu] = useState<
-    "dashboard" | "products" | "orders" | "customers" | "payment" | "tariffs" | "branches" | "security" | "profile"
+    "dashboard" | "products" | "orders" | "customers" | "demos" | "payment" | "tariffs" | "branches" | "security" | "profile"
   >("dashboard");
   const [viewLayout, setViewLayout] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -87,6 +88,22 @@ export default function AdminPage() {
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [isDatabaseConnected, setIsDatabaseConnected] = useState<boolean | null>(null);
   const [showDbGuideModal, setShowDbGuideModal] = useState(false);
+
+  // Multi-Client Demo Profiles State
+  const [demosList, setDemosList] = useState<DemoProfileMeta[]>([]);
+  const [activeDemoSlug, setActiveDemoSlug] = useState<string | null>(null);
+  const [isCreateDemoModalOpen, setIsCreateDemoModalOpen] = useState(false);
+  const [isCreatingDemo, setIsCreatingDemo] = useState(false);
+  const [copiedDemoSlug, setCopiedDemoSlug] = useState<string | null>(null);
+  const [newDemoForm, setNewDemoForm] = useState({
+    clientName: "",
+    storeName: "",
+    slug: "",
+    phone1: "+998 ",
+    telegramUrl: "",
+    instagramUrl: "",
+    storeBioUz: "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
+  });
 
   // Product Add/Edit Modal
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -261,25 +278,39 @@ export default function AdminPage() {
     } catch (e) {}
   }, [soundEnabled]);
 
-  const loadData = useCallback(async (currentPin: string) => {
+  const loadData = useCallback(async (currentPin: string, overrideDemoSlug?: string | null) => {
+    const targetSlug = overrideDemoSlug !== undefined ? overrideDemoSlug : activeDemoSlug;
+    const demoQuery = targetSlug ? `?demo=${encodeURIComponent(targetSlug)}` : "";
+    const cacheSuffix = targetSlug ? `_${targetSlug}` : "";
+    const prodAdminCacheKey = `moda_admin_products_cache${cacheSuffix}`;
+    const prodStoreCacheKey = `moda_store_products_cache${cacheSuffix}`;
+    const settAdminCacheKey = `moda_admin_settings_cache${cacheSuffix}`;
+    const settStoreCacheKey = `moda_store_settings_cache${cacheSuffix}`;
+
     setLoading(true);
     try {
-      const [prodRes, orderRes, settRes, custRes] = await Promise.all([
-        fetch("/api/products", { cache: "no-store" }),
+      const [prodRes, orderRes, settRes, custRes, demosRes] = await Promise.all([
+        fetch(`/api/products${demoQuery}`, { cache: "no-store" }),
         fetch("/api/orders", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
-        fetch("/api/settings", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
+        fetch(`/api/settings${demoQuery}`, { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
         fetch("/api/customers", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
+        fetch("/api/demos", { headers: { "x-admin-pin": currentPin }, cache: "no-store" }),
       ]);
 
       const prodData = await prodRes.json();
       const orderData = await orderRes.json();
       const settData = await settRes.json();
       const custData = await custRes.json();
+      const demosData = await demosRes.json().catch(() => null);
+
+      if (demosData?.success && Array.isArray(demosData.demos)) {
+        setDemosList(demosData.demos);
+      }
 
       if (prodData.success && Array.isArray(prodData.products)) {
         let cachedProducts: Product[] = [];
         try {
-          const raw = localStorage.getItem("moda_admin_products_cache");
+          const raw = localStorage.getItem(prodAdminCacheKey);
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed) && parsed.length > 0) cachedProducts = parsed;
@@ -292,15 +323,15 @@ export default function AdminPage() {
         const mergedProducts = Array.from(prodMap.values());
         setProducts(mergedProducts);
         try {
-          localStorage.setItem("moda_admin_products_cache", JSON.stringify(mergedProducts));
-          localStorage.setItem("moda_store_products_cache", JSON.stringify(mergedProducts));
+          localStorage.setItem(prodAdminCacheKey, JSON.stringify(mergedProducts));
+          localStorage.setItem(prodStoreCacheKey, JSON.stringify(mergedProducts));
         } catch {}
 
         // Auto-heal missing products if server had a cold start
         const missingOnServer = mergedProducts.filter((mp) => !prodData.products.some((sp: Product) => sp.id === mp.id));
         if (missingOnServer.length > 0) {
           missingOnServer.forEach((mp) => {
-            fetch("/api/products", {
+            fetch(`/api/products${demoQuery}`, {
               method: "POST",
               headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
               body: JSON.stringify(mp),
@@ -352,7 +383,7 @@ export default function AdminPage() {
 
         let cachedSettings: Partial<StoreSettings> | null = null;
         try {
-          const raw = localStorage.getItem("moda_admin_settings_cache");
+          const raw = localStorage.getItem(settAdminCacheKey);
           if (raw) cachedSettings = JSON.parse(raw);
         } catch {}
 
@@ -364,8 +395,8 @@ export default function AdminPage() {
         setSettings(mergedSettings);
         setProfileForm(mergedSettings);
         try {
-          localStorage.setItem("moda_admin_settings_cache", JSON.stringify(mergedSettings));
-          localStorage.setItem("moda_store_settings_cache", JSON.stringify(mergedSettings));
+          localStorage.setItem(settAdminCacheKey, JSON.stringify(mergedSettings));
+          localStorage.setItem(settStoreCacheKey, JSON.stringify(mergedSettings));
         } catch {}
 
         // If server cold started without database and lost custom settings, auto-heal sync back
@@ -374,7 +405,7 @@ export default function AdminPage() {
             ([k, v]) => v !== undefined && JSON.stringify(v) !== JSON.stringify((settData.settings as Record<string, unknown>)[k])
           );
           if (hasCustomChange) {
-            fetch("/api/settings", {
+            fetch(`/api/settings${demoQuery}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json", "x-admin-pin": currentPin },
               body: JSON.stringify(cachedSettings),
@@ -390,7 +421,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [playNotificationSound]);
+  }, [playNotificationSound, activeDemoSlug]);
 
   const sizePresets = ["S", "M", "L", "XL", "XXL", "3XL", "46", "48", "50", "52", "54", "39", "40", "41", "42", "43", "44"];
 
@@ -511,11 +542,12 @@ export default function AdminPage() {
     return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
 
-  // Image upload handler
+  // Image upload handler (auto-compresses large images for fast cloud storage)
   const handleUploadImage = async (file: File): Promise<string | null> => {
     try {
+      const compressed = await compressImageFile(file, 1000, 0.82);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressed);
       const res = await fetch("/api/upload", {
         method: "POST",
         headers: { "x-admin-pin": pin },
@@ -651,8 +683,10 @@ export default function AdminPage() {
   const handleSaveSettings = async (updates: Partial<StoreSettings>) => {
     setLoading(true);
     setSaveSuccessMsg("");
+    const demoQuery = activeDemoSlug ? `?demo=${encodeURIComponent(activeDemoSlug)}` : "";
+    const cacheSuffix = activeDemoSlug ? `_${activeDemoSlug}` : "";
     try {
-      const res = await fetch("/api/settings", {
+      const res = await fetch(`/api/settings${demoQuery}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-admin-pin": pin },
         body: JSON.stringify(updates),
@@ -665,9 +699,12 @@ export default function AdminPage() {
           setIsDatabaseConnected(Boolean(data.isDatabaseConnected));
         }
         try {
-          localStorage.setItem("moda_admin_settings_cache", JSON.stringify(data.settings));
-          localStorage.setItem("moda_store_settings_cache", JSON.stringify(data.settings));
+          localStorage.setItem(`moda_admin_settings_cache${cacheSuffix}`, JSON.stringify(data.settings));
+          localStorage.setItem(`moda_store_settings_cache${cacheSuffix}`, JSON.stringify(data.settings));
         } catch {}
+        if (activeDemoSlug) {
+          loadData(pin, activeDemoSlug);
+        }
         setSaveSuccessMsg(lang === "ru" ? "Успешно сохранено!" : "Muvaffaqiyatli saqlandi!");
         setTimeout(() => setSaveSuccessMsg(""), 3500);
       } else {
@@ -795,10 +832,12 @@ export default function AdminPage() {
     e.preventDefault();
     if (!editingProduct) return;
     setIsSavingProduct(true);
+    const demoQuery = activeDemoSlug ? `?demo=${encodeURIComponent(activeDemoSlug)}` : "";
+    const cacheSuffix = activeDemoSlug ? `_${activeDemoSlug}` : "";
 
     try {
       const method = editingProduct.id ? "PUT" : "POST";
-      const res = await fetch("/api/products", {
+      const res = await fetch(`/api/products${demoQuery}`, {
         method,
         headers: { "Content-Type": "application/json", "x-admin-pin": pin },
         body: JSON.stringify(editingProduct),
@@ -811,13 +850,13 @@ export default function AdminPage() {
           setProducts((prev) => {
             const next = [data.product, ...prev.filter((p) => p.id !== data.product.id)];
             try {
-              localStorage.setItem("moda_admin_products_cache", JSON.stringify(next));
-              localStorage.setItem("moda_store_products_cache", JSON.stringify(next));
+              localStorage.setItem(`moda_admin_products_cache${cacheSuffix}`, JSON.stringify(next));
+              localStorage.setItem(`moda_store_products_cache${cacheSuffix}`, JSON.stringify(next));
             } catch {}
             return next;
           });
         }
-        loadData(pin);
+        loadData(pin, activeDemoSlug);
       } else {
         alert(data.error || "Xatolik");
       }
@@ -830,8 +869,10 @@ export default function AdminPage() {
 
   const handleDeleteProduct = async (id: string) => {
     if (!confirm(lang === "ru" ? "Вы уверены, что хотите удалить этот товар?" : "Ushbu mahsulotni o'chirishga ishonchingiz komilmi?")) return;
+    const demoParam = activeDemoSlug ? `&demo=${encodeURIComponent(activeDemoSlug)}` : "";
+    const cacheSuffix = activeDemoSlug ? `_${activeDemoSlug}` : "";
     try {
-      const res = await fetch(`/api/products?id=${id}`, {
+      const res = await fetch(`/api/products?id=${id}${demoParam}`, {
         method: "DELETE",
         headers: { "x-admin-pin": pin },
       });
@@ -840,12 +881,12 @@ export default function AdminPage() {
         setProducts((prev) => {
           const next = prev.filter((p) => p.id !== id);
           try {
-            localStorage.setItem("moda_admin_products_cache", JSON.stringify(next));
-            localStorage.setItem("moda_store_products_cache", JSON.stringify(next));
+            localStorage.setItem(`moda_admin_products_cache${cacheSuffix}`, JSON.stringify(next));
+            localStorage.setItem(`moda_store_products_cache${cacheSuffix}`, JSON.stringify(next));
           } catch {}
           return next;
         });
-        loadData(pin);
+        loadData(pin, activeDemoSlug);
       }
     } catch (err) {
       alert("Tarmoq xatosi");
@@ -853,8 +894,10 @@ export default function AdminPage() {
   };
 
   const handleToggleAvailability = async (product: Product) => {
+    const demoQuery = activeDemoSlug ? `?demo=${encodeURIComponent(activeDemoSlug)}` : "";
+    const cacheSuffix = activeDemoSlug ? `_${activeDemoSlug}` : "";
     try {
-      const res = await fetch("/api/products", {
+      const res = await fetch(`/api/products${demoQuery}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-admin-pin": pin },
         body: JSON.stringify({ id: product.id, isAvailable: !product.isAvailable }),
@@ -864,14 +907,101 @@ export default function AdminPage() {
         setProducts((prev) => {
           const next = prev.map((p) => (p.id === product.id ? { ...p, isAvailable: !product.isAvailable } : p));
           try {
-            localStorage.setItem("moda_admin_products_cache", JSON.stringify(next));
-            localStorage.setItem("moda_store_products_cache", JSON.stringify(next));
+            localStorage.setItem(`moda_admin_products_cache${cacheSuffix}`, JSON.stringify(next));
+            localStorage.setItem(`moda_store_products_cache${cacheSuffix}`, JSON.stringify(next));
           } catch {}
           return next;
         });
-        loadData(pin);
+        loadData(pin, activeDemoSlug);
       }
     } catch (err) {}
+  };
+
+  // Multi-Client Demo CRUD Handlers
+  const handleSelectDemo = async (slug: string | null, nextTab?: "profile" | "products" | "dashboard" | "demos") => {
+    setActiveDemoSlug(slug);
+    await loadData(pin, slug);
+    if (nextTab) {
+      setActiveMenu(nextTab);
+    }
+  };
+
+  const handleCreateDemo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const rawSlug = newDemoForm.slug.trim() || newDemoForm.storeName.trim() || newDemoForm.clientName.trim();
+    if (!rawSlug) {
+      alert(lang === "ru" ? "Введите название магазина" : "Do'kon nomini kiriting");
+      return;
+    }
+    setIsCreatingDemo(true);
+    try {
+      const storeName = newDemoForm.storeName.trim() || newDemoForm.clientName.trim();
+      const res = await fetch("/api/demos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-pin": pin },
+        body: JSON.stringify({
+          slug: rawSlug,
+          clientName: newDemoForm.clientName.trim() || storeName,
+          settings: {
+            storeName,
+            storeHandle: `@${rawSlug.toLowerCase().replace(/[^a-z0-9_]+/g, "_")}`,
+            storeBioUz: newDemoForm.storeBioUz.trim() || "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
+            phone1: newDemoForm.phone1.trim() || "+998 90 123 45 67",
+            telegramUrl: newDemoForm.telegramUrl.trim() || "",
+            instagramUrl: newDemoForm.instagramUrl.trim() || "",
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.demo) {
+        setIsCreateDemoModalOpen(false);
+        setNewDemoForm({
+          clientName: "",
+          storeName: "",
+          slug: "",
+          phone1: "+998 ",
+          telegramUrl: "",
+          instagramUrl: "",
+          storeBioUz: "Zamonaviy kiyim-kechak va poyabzallar onlayn do'koni",
+        });
+        await handleSelectDemo(data.demo.slug, "profile");
+        setSaveSuccessMsg(lang === "ru" ? `Демо "${storeName}" создано!` : `"${storeName}" demosi yaratildi! Endi logo, media va tovarlarni to'ldiring.`);
+        setTimeout(() => setSaveSuccessMsg(""), 4500);
+      } else {
+        alert(data.error || "Xatolik");
+      }
+    } catch {
+      alert("Tarmoq xatosi");
+    } finally {
+      setIsCreatingDemo(false);
+    }
+  };
+
+  const handleDeleteDemo = async (slug: string) => {
+    if (!confirm(lang === "ru" ? `Удалить демо "${slug}"?` : `"${slug}" demosini o'chirishga ishonchingiz komilmi?`)) return;
+    try {
+      const res = await fetch(`/api/demos?slug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+        headers: { "x-admin-pin": pin },
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (activeDemoSlug === slug) {
+          await handleSelectDemo(null, "demos");
+        } else {
+          await loadData(pin, activeDemoSlug);
+        }
+      }
+    } catch {
+      alert("Tarmoq xatosi");
+    }
+  };
+
+  const handleCopyDemoLink = (slug: string) => {
+    const url = `${window.location.origin}/d/${slug}`;
+    navigator.clipboard.writeText(url);
+    setCopiedDemoSlug(slug);
+    setTimeout(() => setCopiedDemoSlug(null), 2000);
   };
 
   const toggleSize = (sz: string) => {
@@ -1429,6 +1559,26 @@ export default function AdminPage() {
                   <span>{lang === "ru" ? "Клиенты и Статистика" : "Mijozlar va Statistika"}</span>
                 </button>
 
+                {/* Mijozlar Demolari (Multi-Client Demo) */}
+                <button
+                  onClick={() => { setActiveMenu("demos"); setMobileMenuOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
+                    activeMenu === "demos"
+                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/25"
+                      : isDark ? "text-slate-300 hover:bg-white/5" : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>{lang === "ru" ? "Демо для клиентов" : "Mijozlar Demolari"}</span>
+                  </div>
+                  {demosList.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                      {demosList.length}
+                    </span>
+                  )}
+                </button>
+
                 {/* 5. Karta & To'lov */}
                 <button
                   onClick={() => { setActiveMenu("payment"); setMobileMenuOpen(false); }}
@@ -1684,6 +1834,33 @@ export default function AdminPage() {
             >
               <Users className="w-4 h-4" />
               <span>{lang === "ru" ? "Клиенты и Статистика" : "Mijozlar va Statistika"}</span>
+            </button>
+
+            {/* Mijozlar Demolari (Multi-Client Demo) */}
+            <button
+              onClick={() => {
+                setActiveMenu("demos");
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
+                activeMenu === "demos"
+                  ? (isDark ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30 font-bold border border-violet-400/30" : "bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold shadow-md shadow-violet-500/25")
+                  : isDark
+                  ? "text-zinc-400 hover:text-white hover:bg-white/5"
+                  : "text-slate-600 hover:text-violet-600 hover:bg-violet-50/70"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>{lang === "ru" ? "Демо для клиентов" : "Mijozlar Demolari"}</span>
+              </div>
+              {demosList.length > 0 && (
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                  activeMenu === "demos" ? "bg-white/20 text-white" : "bg-violet-500/15 text-violet-400"
+                }`}>
+                  {demosList.length}
+                </span>
+              )}
             </button>
 
             {/* 5. Karta & To'lov */}
@@ -1992,6 +2169,59 @@ export default function AdminPage() {
             </defs>
           </svg>
         </div>
+
+        {/* Active Client Demo Mode Banner */}
+        {activeDemoSlug && (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-violet-600/20 via-indigo-600/20 to-blue-600/20 border border-violet-500/40 text-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3 animate-in fade-in shadow-md relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <p className={`font-black text-sm ${headingTextClass}`}>
+                  {lang === "ru" ? "Режим настройки демо:" : "Mijoz demosi tahrirlanmoqda:"}{" "}
+                  <span className="text-violet-400">{settings.storeName || activeDemoSlug}</span>
+                </p>
+                <p className={`text-[11px] ${subTextClass}`}>
+                  {lang === "ru"
+                    ? `Все изменения логотипа, медиа и товаров сохраняются только для ссылки /d/${activeDemoSlug}`
+                    : `Logo, banner va tovarlarga kiritilgan barcha o'zgarishlar faqat /d/${activeDemoSlug} havolasi uchun saqlanadi`}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleCopyDemoLink(activeDemoSlug)}
+                className="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              >
+                {copiedDemoSlug === activeDemoSlug ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedDemoSlug === activeDemoSlug ? (lang === "ru" ? "Скопировано!" : "Nusxalandi!") : (lang === "ru" ? "Копировать ссылку" : "Linkni nusxalash")}</span>
+              </button>
+              <a
+                href={`/d/${activeDemoSlug}`}
+                target="_blank"
+                rel="noreferrer"
+                className={`px-3 py-2 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all ${
+                  isDark ? "bg-white/10 border-white/20 text-white hover:bg-white/15" : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>{lang === "ru" ? "Открыть сайт" : "Saytni ko'rish"}</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => handleSelectDemo(null, "demos")}
+                className={`px-3 py-2 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  isDark ? "bg-slate-900/80 border-slate-700 text-slate-300 hover:text-white" : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{lang === "ru" ? "К основному магазину" : "Asosiy do'konga qaytish"}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Global Save feedback alert */}
         {saveSuccessMsg && (
@@ -3459,6 +3689,154 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =========================================================================
+            SECTION: MULTI-CLIENT PERSONALIZED DEMOS
+           ========================================================================= */}
+        {activeMenu === "demos" && (
+          <div className="space-y-5 relative z-10">
+            <div className={`p-5 sm:p-6 rounded-3xl ${cardBgClass} border space-y-4`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className={`font-black text-lg sm:text-xl ${headingTextClass} flex items-center gap-2`}>
+                    <Sparkles className="w-5 h-5 text-violet-500" />
+                    <span>{lang === "ru" ? "Персональные демо для клиентов" : "Mijozlar uchun shaxsiy demolar"}</span>
+                  </h2>
+                  <p className={`text-xs ${subTextClass} mt-1 max-w-2xl`}>
+                    {lang === "ru"
+                      ? "Создайте отдельную ссылку для каждого клиента с его названием, логотипом, баннером и товарами — без создания новых проектов на GitHub или Vercel."
+                      : "Har bir mijoz uchun alohida havola (/d/do'kon-nomi) yarating. Mijoz linkni ochganida o'zining do'kon nomi, logotipi, mediasi va tovarlarini ko'radi — alohida GitHub yoki Vercel kerak emas."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDemoModalOpen(true)}
+                  className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-600/25 cursor-pointer shrink-0 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{lang === "ru" ? "Создать демо клиента" : "Yangi mijoz demosi"}</span>
+                </button>
+              </div>
+            </div>
+
+            {demosList.length === 0 ? (
+              <div className={`p-8 sm:p-12 rounded-3xl ${cardBgClass} border text-center space-y-3`}>
+                <div className="w-14 h-14 rounded-2xl bg-violet-500/15 border border-violet-500/30 text-violet-400 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7" />
+                </div>
+                <h3 className={`font-bold text-base ${headingTextClass}`}>
+                  {lang === "ru" ? "Пока нет созданных демо" : "Hozircha mijoz demolari yaratilmagan"}
+                </h3>
+                <p className={`text-xs ${subTextClass} max-w-md mx-auto`}>
+                  {lang === "ru"
+                    ? "Нажмите «Создать демо клиента», введите название магазина, загрузите логотип и фото товаров, а затем отправьте готовую ссылку клиенту."
+                    : "\"Yangi mijoz demosi\" tugmasini bosing, mijozning do'kon nomini kiriting, logo va rasmlarini yuklang va tayyor shaxsiy havolani yuboring."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDemoModalOpen(true)}
+                  className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{lang === "ru" ? "Создать первое демо" : "Birinchi demoni yaratish"}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {demosList.map((demo) => {
+                  const isCurrent = activeDemoSlug === demo.slug;
+                  return (
+                    <div
+                      key={demo.slug}
+                      className={`p-4 sm:p-5 rounded-3xl ${cardBgClass} border transition-all flex flex-col justify-between gap-4 ${
+                        isCurrent ? "ring-2 ring-violet-500 border-violet-500" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl overflow-hidden border border-violet-500/30 bg-zinc-900 shrink-0 relative">
+                          <Image
+                            src={demo.storeAvatar || "/moda-logo.svg"}
+                            alt={demo.storeName}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className={`font-black text-sm truncate ${headingTextClass}`}>{demo.storeName}</h3>
+                            {isCurrent && (
+                              <span className="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-bold shrink-0">
+                                Faol
+                              </span>
+                            )}
+                          </div>
+                          {demo.clientName && demo.clientName !== demo.storeName && (
+                            <p className={`text-[11px] truncate ${subTextClass}`}>{demo.clientName}</p>
+                          )}
+                          <p className="text-[11px] font-mono text-violet-400 mt-1 truncate">/d/{demo.slug}</p>
+                          <p className={`text-[10px] mt-1 ${subTextClass}`}>
+                            {demo.productsCount && demo.productsCount > 0
+                              ? `${demo.productsCount} ta maxsus tovar`
+                              : lang === "ru"
+                              ? "Базовый каталог (20 товаров)"
+                              : "Asosiy katalog (20 ta tovar)"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-purple-900/10 dark:border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectDemo(demo.slug, "profile")}
+                          className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>{lang === "ru" ? "Настроить" : "Sozlash"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyDemoLink(demo.slug)}
+                          className={`px-3 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                            copiedDemoSlug === demo.slug
+                              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                              : isDark
+                              ? "bg-white/5 border-white/10 text-slate-200 hover:bg-white/10"
+                              : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          {copiedDemoSlug === demo.slug ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedDemoSlug === demo.slug ? "Nusxalandi" : "Link"}</span>
+                        </button>
+                        <a
+                          href={`/d/${demo.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`px-3 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                            isDark
+                              ? "bg-white/5 border-white/10 text-slate-200 hover:bg-white/10"
+                              : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>{lang === "ru" ? "Открыть" : "Ochish"}</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDemo(demo.slug)}
+                          className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{lang === "ru" ? "Удалить" : "O'chirish"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -5959,6 +6337,140 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      {/* Create Client Demo Modal */}
+      {isCreateDemoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className={`relative w-full max-w-lg rounded-3xl border shadow-2xl p-5 sm:p-6 overflow-y-auto max-h-[92vh] space-y-5 ${isDark ? "bg-[#141226] border-purple-900/50 text-white" : "bg-white border-purple-200 text-zinc-900"}`}>
+            <div className={`flex items-center justify-between border-b pb-3.5 ${isDark ? "border-purple-950/60" : "border-zinc-200"}`}>
+              <div>
+                <h3 className="font-black text-base sm:text-lg flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-violet-400" />
+                  <span>{lang === "ru" ? "Создать демо для клиента" : "Yangi mijoz demosi yaratish"}</span>
+                </h3>
+                <p className={`text-xs ${subTextClass}`}>
+                  {lang === "ru"
+                    ? "После создания откроется редактор логотипа, баннера и товаров этого клиента"
+                    : "Yaratilgandan so'ng darhol shu mijozning logo, banner va tovarlarini yuklashingiz mumkin"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateDemoModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-zinc-700/20 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDemo} className="space-y-4 text-xs">
+              <div>
+                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                  {lang === "ru" ? "Название магазина (увидит клиент) *" : "Do'kon nomi (mijoz saytida ko'rinadi) *"}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newDemoForm.storeName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const autoSlug = val
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-|-$/g, "");
+                    setNewDemoForm((prev) => ({
+                      ...prev,
+                      storeName: val,
+                      slug: prev.slug === "" || prev.slug === prev.storeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+                        ? autoSlug
+                        : prev.slug,
+                    }));
+                  }}
+                  placeholder="Masalan: LOLA BOUTIQUE"
+                  className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                  {lang === "ru" ? "Ссылка (Slug) *" : "Shaxsiy havola (Link / Slug) *"}
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-mono ${subTextClass}`}>/d/</span>
+                  <input
+                    type="text"
+                    required
+                    value={newDemoForm.slug}
+                    onChange={(e) =>
+                      setNewDemoForm((prev) => ({
+                        ...prev,
+                        slug: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""),
+                      }))
+                    }
+                    placeholder="lola-boutique"
+                    className={`flex-1 px-3.5 py-2.5 rounded-xl font-mono focus:outline-none ${inputBgClass}`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block font-bold mb-1.5 ${subTextClass}`}>
+                  {lang === "ru" ? "Имя клиента / Заметка (только для вас)" : "Mijoz ismi / Eslatma (faqat siz ko'rasiz)"}
+                </label>
+                <input
+                  type="text"
+                  value={newDemoForm.clientName}
+                  onChange={(e) => setNewDemoForm((prev) => ({ ...prev, clientName: e.target.value }))}
+                  placeholder="Masalan: Dilnoza opa (Chorsu)"
+                  className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>Telefon raqami</label>
+                  <input
+                    type="text"
+                    value={newDemoForm.phone1}
+                    onChange={(e) => setNewDemoForm((prev) => ({ ...prev, phone1: e.target.value }))}
+                    placeholder="+998 90 123 45 67"
+                    className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block font-bold mb-1.5 ${subTextClass}`}>Instagram / Telegram</label>
+                  <input
+                    type="text"
+                    value={newDemoForm.instagramUrl}
+                    onChange={(e) => setNewDemoForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
+                    placeholder="https://instagram.com/..."
+                    className={`w-full px-3.5 py-2.5 rounded-xl focus:outline-none ${inputBgClass}`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDemoModalOpen(false)}
+                  className={`flex-1 py-2.5 rounded-xl font-bold cursor-pointer ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-700"}`}
+                >
+                  {lang === "ru" ? "Отмена" : "Bekor qilish"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingDemo}
+                  className="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold cursor-pointer shadow-md disabled:opacity-60"
+                >
+                  {isCreatingDemo
+                    ? (lang === "ru" ? "Создание..." : "Yaratilmoqda...")
+                    : (lang === "ru" ? "Создать и настроить →" : "Yaratish va sozlash →")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Supabase Database Connection Guide Modal */}
       {showDbGuideModal && (

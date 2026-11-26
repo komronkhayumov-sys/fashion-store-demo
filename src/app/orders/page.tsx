@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Language, Order, StoreSettings } from "@/types";
 import { DEFAULT_SETTINGS } from "@/constants";
+import { resolveActiveDemoSlug } from "@/lib/demoClient";
 import { formatUzbekCurrency } from "@/lib/format";
 import ReceiptUploader from "@/components/store/ReceiptUploader";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
@@ -114,7 +115,10 @@ export default function CustomerOrdersPage() {
       }
     } catch {}
 
-    fetch("/api/settings", { cache: "no-store" })
+    const activeDemo = resolveActiveDemoSlug();
+    const demoQuery = activeDemo ? `?demo=${encodeURIComponent(activeDemo)}` : "";
+
+    fetch(`/api/settings${demoQuery}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.settings) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSettings, isSupabaseConfigured, saveSettings, verifyPin } from "@/lib/storage";
+import { getDemoProfile, getEffectiveSettings, isSupabaseConfigured, saveDemoProfile, saveSettings, verifyPin } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,7 +14,8 @@ export async function GET(req: NextRequest) {
   try {
     const pinHeader = req.headers.get("x-admin-pin") || "";
     const isAdmin = await verifyPin(pinHeader);
-    const settings = await getSettings();
+    const demoSlug = new URL(req.url).searchParams.get("demo");
+    const settings = await getEffectiveSettings(demoSlug);
     const isDatabaseConnected = isSupabaseConfigured();
 
     if (!isAdmin) {
@@ -53,7 +54,19 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: "PIN kod kamida 4 xonali bo'lishi kerak" }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    const updated = await saveSettings(body);
+    const demoSlug = new URL(req.url).searchParams.get("demo");
+    let updated;
+    if (demoSlug) {
+      const existingDemo = await getDemoProfile(demoSlug);
+      await saveDemoProfile({
+        slug: demoSlug,
+        clientName: existingDemo?.clientName || body.storeName || demoSlug,
+        settings: body,
+      });
+      updated = await getEffectiveSettings(demoSlug);
+    } else {
+      updated = await saveSettings(body);
+    }
     const isDatabaseConnected = isSupabaseConfigured();
     return NextResponse.json({ success: true, settings: updated, isDatabaseConnected }, { headers: NO_CACHE_HEADERS });
   } catch (err: unknown) {
