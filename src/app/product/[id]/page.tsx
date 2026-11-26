@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getEffectiveProducts, getEffectiveSettings } from "@/lib/storage";
+import { getProductById, getProducts, getSettings } from "@/lib/storage";
 import ProductDetailClient from "./ProductDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -9,27 +9,20 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ demo?: string }>;
 }
 
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const { demo } = await searchParams;
-  const [products, settings] = await Promise.all([
-    getEffectiveProducts(demo),
-    getEffectiveSettings(demo),
-  ]);
-  const product = products.find((p) => p.id === id);
-  const storeName = settings.storeName || "MODA UZ";
+  const product = await getProductById(id);
 
   if (!product) {
     return {
-      title: `Mahsulot topilmadi — ${storeName}`,
+      title: "Mahsulot topilmadi — MODA UZ",
     };
   }
 
-  const title = `${product.name} — ${storeName}`;
-  const desc = product.description || `${storeName} kolleksiyasiga mansub zamonaviy kiyim va poyabzallar.`;
+  const title = `${product.name} — MODA UZ`;
+  const desc = product.description || "MODA UZ kolleksiyasiga mansub zamonaviy kiyim va poyabzallar.";
 
   return {
     title,
@@ -50,18 +43,16 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   };
 }
 
-export default async function ProductPage({ params, searchParams }: Props) {
+export default async function ProductPage({ params }: Props) {
   const { id } = await params;
-  const { demo } = await searchParams;
-  const [allProducts, settings] = await Promise.all([
-    getEffectiveProducts(demo),
-    getEffectiveSettings(demo),
-  ]);
-  const product = allProducts.find((p) => p.id === id);
+  const product = await getProductById(id);
 
   if (!product) {
     notFound();
   }
+
+  const allProducts = await getProducts();
+  const settings = await getSettings();
 
   return (
     <ProductDetailClient

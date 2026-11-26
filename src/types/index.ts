@@ -165,26 +165,6 @@ export type StoreSettings = {
   globalPromoDiscountPercent?: number;
 };
 
-export type DemoProfileMeta = {
-  slug: string;
-  clientName: string;
-  storeName: string;
-  storeAvatar?: string;
-  productsCount?: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type DemoProfile = {
-  slug: string;
-  clientName: string;
-  settings: Partial<StoreSettings>;
-  products?: Product[];
-  useCustomProducts?: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;

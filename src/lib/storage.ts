@@ -1,27 +1,11 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { Customer, CustomerMeasurements, DemoProfile, DemoProfileMeta, Order, Product, StoreSettings } from "@/types";
+import { Customer, CustomerMeasurements, Order, Product, StoreSettings } from "@/types";
 import { DEFAULT_SETTINGS, INITIAL_PRODUCTS } from "@/constants";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export { isSupabaseConfigured };
-
-export async function checkSupabaseHealth(): Promise<{ connected: boolean; error?: string }> {
-  const supabase = getSupabase();
-  if (!supabase) {
-    return { connected: false, error: "Supabase env kalitlari (URL / KEY) kiritilmagan" };
-  }
-  try {
-    const { error } = await supabase.from("settings").select("id").limit(1);
-    if (error) {
-      return { connected: false, error: error.message };
-    }
-    return { connected: true };
-  } catch (err: unknown) {
-    return { connected: false, error: err instanceof Error ? err.message : String(err) };
-  }
-}
 
 // Detect serverless environment (Vercel, AWS Lambda, Netlify, etc.)
 const isServerless = Boolean(
@@ -64,14 +48,12 @@ const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const CUSTOMERS_FILE = path.join(DATA_DIR, "customers.json");
-const DEMOS_FILE = path.join(DATA_DIR, "demos.json");
 
 // In-memory singletons to guarantee instant consistency and fallback if disk is locked
 let memorySettings: StoreSettings | null = null;
 let memoryProducts: Product[] | null = null;
 let memoryOrders: Order[] | null = null;
 let memoryCustomers: Customer[] | null = null;
-let memoryDemos: Record<string, DemoProfile> | null = null;
 
 function ensureDirectoryExists(): boolean {
   try {
@@ -714,190 +696,4 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
 
 export async function updateOrderStatus(id: string, status: Order["status"]): Promise<Order | null> {
   return updateOrder(id, { status });
-}
-
-// ------------------- MULTI-CLIENT DEMO PROFILES STORAGE -------------------
-export function sanitizeDemoSlug(raw: string): string {
-  return String(raw || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 48);
-}
-
-function readLocalDemosMap(): Record<string, DemoProfile> {
-  if (memoryDemos) return memoryDemos;
-  const parsed = safeReadFile<Record<string, DemoProfile>>(DEMOS_FILE, "demos.json", {});
-  memoryDemos = parsed && typeof parsed === "object" ? parsed : {};
-  return memoryDemos;
-}
-
-function toDemoMeta(p: DemoProfile): DemoProfileMeta {
-  return {
-    slug: p.slug,
-    clientName: p.clientName || p.settings?.storeName || p.slug,
-    storeName: p.settings?.storeName || p.clientName || p.slug,
-    storeAvatar: p.settings?.storeAvatar,
-    productsCount: Array.isArray(p.products) ? p.products.length : 0,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-  };
-}
-
-export async function getDemoProfilesList(): Promise<DemoProfileMeta[]> {
-  const supabase = getSupabase();
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("id, data")
-        .like("id", "demo_profile_%");
-
-      if (!error && Array.isArray(data)) {
-        const list: DemoProfileMeta[] = [];
-        for (const row of data) {
-          const prof = row.data as DemoProfile | undefined;
-          if (prof && prof.slug) {
-            list.push(toDemoMeta(prof));
-          }
-        }
-        return list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      }
-    } catch (err) {
-      console.warn("[storage] Supabase getDemoProfilesList error:", err);
-    }
-  }
-
-  const localMap = readLocalDemosMap();
-  return Object.values(localMap)
-    .map(toDemoMeta)
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-}
-
-export async function getDemoProfile(slug: string): Promise<DemoProfile | null> {
-  const clean = sanitizeDemoSlug(slug);
-  if (!clean) return null;
-
-  const supabase = getSupabase();
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("data")
-        .eq("id", `demo_profile_${clean}`)
-        .single();
-
-      if (!error && data?.data) {
-        return data.data as DemoProfile;
-      }
-    } catch (err) {
-      console.warn(`[storage] Supabase getDemoProfile(${clean}) error:`, err);
-    }
-  }
-
-  const localMap = readLocalDemosMap();
-  return localMap[clean] || null;
-}
-
-export async function saveDemoProfile(input: Partial<DemoProfile> & { slug: string }): Promise<DemoProfile> {
-  const clean = sanitizeDemoSlug(input.slug);
-  if (!clean) throw new Error("Demo link (slug) noto'g'ri");
-
-  const existing = await getDemoProfile(clean);
-  const now = new Date().toISOString();
-
-  const merged: DemoProfile = {
-    slug: clean,
-    clientName: input.clientName ?? existing?.clientName ?? clean,
-    settings: {
-      ...(existing?.settings || {}),
-      ...(input.settings || {}),
-    },
-    products: input.products !== undefined ? input.products : existing?.products,
-    useCustomProducts: input.useCustomProducts !== undefined ? input.useCustomProducts : (existing?.useCustomProducts ?? true),
-    createdAt: existing?.createdAt || now,
-    updatedAt: now,
-  };
-
-  // Update local cache & disk
-  const localMap = readLocalDemosMap();
-  localMap[clean] = merged;
-  memoryDemos = localMap;
-  safeWriteFile(DEMOS_FILE, localMap);
-
-  const supabase = getSupabase();
-  if (supabase) {
-    const { error } = await supabase.from("settings").upsert({
-      id: `demo_profile_${clean}`,
-      data: merged,
-      updated_at: now,
-    });
-    if (error) {
-      console.error(`[storage] Supabase saveDemoProfile(${clean}) error:`, error);
-      throw new Error(`Supabase xatosi: ${error.message}`);
-    }
-  }
-
-  return merged;
-}
-
-export async function deleteDemoProfile(slug: string): Promise<boolean> {
-  const clean = sanitizeDemoSlug(slug);
-  if (!clean) return false;
-
-  const localMap = readLocalDemosMap();
-  if (localMap[clean]) {
-    delete localMap[clean];
-    memoryDemos = localMap;
-    safeWriteFile(DEMOS_FILE, localMap);
-  }
-
-  const supabase = getSupabase();
-  if (supabase) {
-    try {
-      await supabase.from("settings").delete().eq("id", `demo_profile_${clean}`);
-    } catch (err) {
-      console.warn(`[storage] Supabase deleteDemoProfile(${clean}) error:`, err);
-    }
-  }
-
-  return true;
-}
-
-export async function getEffectiveSettings(demoSlug?: string | null): Promise<StoreSettings> {
-  const base = await getSettings();
-  if (!demoSlug) return base;
-
-  const demo = await getDemoProfile(demoSlug);
-  if (!demo) return base;
-
-  return {
-    ...base,
-    ...demo.settings,
-    // Always preserve base security/system secrets unless explicitly overridden
-    adminPin: base.adminPin,
-    telegramBotToken: base.telegramBotToken,
-    telegramChatId: base.telegramChatId,
-    geminiApiKey: base.geminiApiKey,
-  };
-}
-
-export async function getEffectiveProducts(demoSlug?: string | null): Promise<Product[]> {
-  const baseProducts = await getProducts();
-  if (!demoSlug) return baseProducts;
-
-  const demo = await getDemoProfile(demoSlug);
-  if (!demo) return baseProducts;
-
-  if (Array.isArray(demo.products) && demo.products.length > 0) {
-    if (demo.useCustomProducts !== false) {
-      return demo.products;
-    }
-    const customIds = new Set(demo.products.map((p) => p.id));
-    return [...demo.products, ...baseProducts.filter((bp) => !customIds.has(bp.id))];
-  }
-
-  return baseProducts;
 }
