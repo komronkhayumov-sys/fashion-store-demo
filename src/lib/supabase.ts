@@ -7,21 +7,38 @@ let supabaseClient: SupabaseClient | null = null;
  * NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_SERVICE_ROLE_KEY)
  * are configured. Returns null otherwise for graceful offline/file fallback.
  */
+function normalizeSupabaseUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  const dashboardMatch = trimmed.match(/supabase\.com\/dashboard\/project\/([a-z0-9-]+)/i);
+  if (dashboardMatch && dashboardMatch[1]) {
+    return `https://${dashboardMatch[1]}.supabase.co`;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.origin;
+  } catch {
+    return trimmed.replace(/\/+$/, "");
+  }
+}
+
 export function getSupabase(): SupabaseClient | null {
   if (supabaseClient) {
     return supabaseClient;
   }
 
-  const supabaseUrl =
+  const rawUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseKey =
+  const rawKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!rawUrl || !rawKey) {
     return null;
   }
+
+  const supabaseUrl = normalizeSupabaseUrl(rawUrl);
+  const supabaseKey = rawKey.trim();
 
   try {
     supabaseClient = createClient(supabaseUrl, supabaseKey, {
