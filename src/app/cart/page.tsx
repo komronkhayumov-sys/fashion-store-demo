@@ -593,7 +593,7 @@ export default function CartPage() {
               </h2>
               <p className="text-xs text-[#64748B] dark:text-slate-400 max-w-sm mx-auto">
                 {isRu
-                  ? "Вы пока не добавили ни одного товара. Перейдите в каталог и выберите понравившиеся образы."
+                  ? "Вы пока не добавили ни одного товара. Перейдите в каталог и выберите понравившиеся модели."
                   : "Siz hali birorta kiyim tanlamadingiz. Katalogdagi zamonaviy modellarni ko'rib chiqing."}
               </p>
             </div>

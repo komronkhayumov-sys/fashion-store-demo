@@ -3986,7 +3986,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Card 3: Combo / Lookbook chegirmasi */}
+              {/* Card 3: To'plam (Combo) chegirmasi */}
               <div className={`p-5 rounded-2xl ${itemCardBg} border space-y-4`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -3995,10 +3995,10 @@ export default function AdminPage() {
                     </span>
                     <div>
                       <h3 className={`font-bold text-xs sm:text-sm ${headingTextClass}`}>
-                        {lang === "ru" ? "Скидка на комбо-образы (Lookbook / AI)" : "Combo to'plam chegirmasi (AI & Lookbook)"}
+                        {lang === "ru" ? "Скидка на комплект (Combo)" : "To'plam (Combo) chegirmasi"}
                       </h3>
                       <p className={`text-[11px] ${subTextClass}`}>
-                        {lang === "ru" ? "Автоматическая скидка при покупке полного комплекта" : "To'liq kiyim to'plamini (obraz) birgalikda olgandagi chegirma"}
+                        {lang === "ru" ? "Скидка при покупке нескольких товаров комплектом" : "Bir nechta kiyimni to'plam qilib olganda qo'llaniladigan chegirma"}
                       </p>
                     </div>
                   </div>
@@ -4029,8 +4029,8 @@ export default function AdminPage() {
                     </div>
                     <p className="text-[10px] text-zinc-400 mt-1">
                       {lang === "ru"
-                        ? "Клиент видит эту скидку в разделе 'AI Stylist / Lookbook' при оформлении сета"
-                        : "Xaridor 'AI Stylist / Lookbook' bo'limida tayyor kiyim to'plamiga aynan shu foizda chegirma oladi"}
+                        ? "Процент скидки сохраняется в настройках магазина"
+                        : "Chegirma foizi do'kon sozlamalarida saqlanadi"}
                     </p>
                   </div>
                 </div>
@@ -4609,8 +4609,8 @@ export default function AdminPage() {
 
                 <p className={`text-[11px] ${subTextClass} leading-relaxed`}>
                   {lang === "ru"
-                    ? "Вставьте сюда ваш ключ API из Google AI Studio. После сохранения AI-стилист на сайте мгновенно переключится на полноценную живую модель Gemini и сможет свободно общаться на узбекском и русском языках."
-                    : "Google AI Studio'dan olingan API kalitini shu yerga kiriting. Saqlaganingizdan so'ng, saytdagi AI maslahatchi darhol haqiqiy jonli Gemini sun'iy intellektiga ulanadi va mijozlar bilan erkin, jonli suhbatlasha oladi."}
+                    ? "Вставьте сюда ваш ключ API из Google AI Studio. После сохранения AI Помощник на сайте мгновенно переключится на живую модель Gemini для подбора размеров и ответов на вопросы о магазине."
+                    : "Google AI Studio'dan olingan API kalitini shu yerga kiriting. Saqlaganingizdan so'ng, saytdagi AI Yordamchi darhol jonli Gemini sun'iy intellektiga ulanib, o'lchamlarni aniqlash va do'kon savollariga javob berishda yordam beradi."}
                 </p>
 
                 <div>

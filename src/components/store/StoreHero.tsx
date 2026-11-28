@@ -15,7 +15,7 @@ interface StoreHeroProps {
   onOpenWifiModal: () => void;
   onOpenPhoneModal: () => void;
   onOpenProfileModal: () => void;
-  onOpenAiOutfitModal: () => void;
+  onOpenAiAssistant: () => void;
   onViewCatalog: () => void;
 }
 
@@ -26,7 +26,7 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
   onOpenWifiModal,
   onOpenPhoneModal,
   onOpenProfileModal,
-  onOpenAiOutfitModal,
+  onOpenAiAssistant,
   onViewCatalog,
 }) => {
   const t = translations[lang];
@@ -153,7 +153,7 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
         </button>
       </div>
 
-      {/* 3. Side-by-side on desktop: Profile Card + AI Stilist Card */}
+      {/* 3. Side-by-side on desktop: Profile Card + AI Yordamchi Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {/* Profile Card */}
         <button
@@ -180,26 +180,26 @@ export const StoreHero: React.FC<StoreHeroProps> = ({
           <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
         </button>
 
-        {/* AI Stilist Card */}
+        {/* AI Yordamchi Card */}
         <div className="relative rounded-3xl bg-gradient-to-r from-blue-100/90 via-indigo-50/70 to-blue-50/90 dark:from-blue-950/30 dark:via-zinc-900 dark:to-indigo-950/30 border border-blue-200/80 dark:border-blue-900/40 p-4 sm:p-5 overflow-hidden flex items-center justify-between shadow-xs">
           <div className="relative z-10 max-w-[65%] space-y-1">
             <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
               <Sparkles className="w-4 h-4" />
               <h3 className="font-black text-sm text-zinc-950 dark:text-white">
-                AI Stilist & Obrazlar
+                AI Yordamchi
               </h3>
             </div>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-snug">
               {isUz
-                ? "Bir-biriga mos kiyimlar kombinatsiyasi"
-                : "Готовые стильные комбинации одежды"}
+                ? "O'lchamingizni aniqlang va do'kon haqida savol bering"
+                : "Подберите размер и задайте вопрос о магазине"}
             </p>
             <div className="pt-2">
               <button
-                onClick={onOpenAiOutfitModal}
+                onClick={onOpenAiAssistant}
                 className="px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
               >
-                <span>{isUz ? "Kombinatsiyalarni ko'rish" : "Посмотреть"}</span>
+                <span>{isUz ? "Yordamchini ochish" : "Посмотреть"}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

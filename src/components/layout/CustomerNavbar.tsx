@@ -8,7 +8,7 @@ import {
   Heart,
   ShoppingBag,
   User,
-  Sparkles,
+  Bot,
   MapPin,
   Clock,
   Sun,
@@ -175,18 +175,18 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
             </span>
           </button>
 
-          {/* 3. AI Stylist */}
+          {/* 3. AI Yordamchi */}
           <button
             type="button"
-            onClick={() => onSectionChange("ai-mode")}
+            onClick={() => onSectionChange("ai-assistant")}
             className={`h-9 px-2.5 xl:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
-              activeSection === "ai-mode"
+              activeSection === "ai-assistant"
                 ? "bg-violet-700 text-white shadow-xs font-black"
                 : "text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>AI Stylist</span>
+            <Bot className="w-3.5 h-3.5 shrink-0" />
+            <span>{isUz ? "AI Yordamchi" : "AI Помощник"}</span>
           </button>
 
           {/* 4. Buyurtmalarim */}

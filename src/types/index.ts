@@ -72,7 +72,7 @@ export type Order = {
   telegramSent?: boolean;
 };
 
-export type CustomerNavSection = 'katalog' | 'branches' | 'ai-mode' | 'orders' | 'profile' | 'home' | 'products';
+export type CustomerNavSection = 'katalog' | 'branches' | 'ai-assistant' | 'orders' | 'profile' | 'home' | 'products';
 
 export type CustomerMeasurements = {
   height?: number; // Bo'y (sm)
@@ -106,18 +106,6 @@ export type CartItem = {
   price: number;
 };
 
-export type OutfitCombination = {
-  id: string;
-  titleUz: string;
-  titleRu: string;
-  descriptionUz: string;
-  descriptionRu: string;
-  style: 'classic' | 'streetwear' | 'smart_casual';
-  tag: string;
-  items: Product[];
-  totalPrice: number;
-  comboPrice: number;
-};
 
 export type Category = {
   id: string;

@@ -399,21 +399,6 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleOrderOutfit = (comboItems: Product[], totalAmount: number, comboTitle: string) => {
-    const comboProduct: Product = {
-      id: `combo-${Date.now().toString(36)}`,
-      name: comboTitle,
-      nameRu: comboTitle,
-      description: `To'plamdagi kiyimlar: ${comboItems.map((c) => c.name).join(", ")}`,
-      price: totalAmount,
-      category: "suits",
-      image: comboItems[0]?.image || "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
-      sizes: ["Standart To'plam (M/L)", "To'plam (XL/XXL)"],
-      isAvailable: true,
-      badge: "Chegirma",
-    };
-    setSelectedProduct(comboProduct);
-  };
 
   const handleOpenProduct = (p: Product, mode: "detail" | "checkout" = "detail") => {
     setRecentlyViewedIds((prev) => {
@@ -483,7 +468,6 @@ export default function HomePage() {
             onSelectProduct={handleOpenProduct}
             onAddToCart={handleAddToCart}
             onViewCatalog={handleViewCatalog}
-            onOpenAiMode={() => setActiveSection("ai-mode")}
             onOpenBranches={() => setActiveSection("branches")}
             onOpenWifiModal={() => setIsWifiOpen(true)}
             onOpenPhoneModal={() => setIsPhoneOpen(true)}
@@ -529,15 +513,14 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Section 3: AI STYLIST */}
-        {activeSection === "ai-mode" && (
+        {/* Section 3: AI YORDAMCHI */}
+        {activeSection === "ai-assistant" && (
           <AiModeSection
             products={products}
             lang={lang}
             settings={settings}
             onAddToCart={handleAddToCart}
             onSelectProduct={handleOpenProduct}
-            onOrderOutfit={handleOrderOutfit}
             onNavigateToProfile={() => setActiveSection("profile")}
             onNavigateToProducts={() => setActiveSection("katalog")}
           />

@@ -7,7 +7,6 @@ import {
   ShoppingBag,
   Ruler,
   Heart,
-  Bookmark,
   MapPin,
   Settings,
   ChevronRight,
@@ -54,22 +53,11 @@ interface ProfileSectionProps {
   initialSubView?: ProfileSubView;
 }
 
-export interface SavedOutfitLook {
-  id: string;
-  titleUz: string;
-  titleRu?: string;
-  style: string;
-  totalPrice: number;
-  discountedPrice?: number;
-  items: Product[];
-}
-
 export type ProfileSubView =
   | "overview"
   | "orders"
   | "measurements"
   | "wishlist"
-  | "saved_looks"
   | "addresses"
   | "settings";
 
@@ -136,9 +124,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   );
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
 
-  // Saved AI Looks
-  const [savedOutfits, setSavedOutfits] = useState<SavedOutfitLook[]>([]);
-
   // Saved addresses list & validation
   const [savedAddresses, setSavedAddresses] = useState<string[]>(
     customer?.address ? [customer.address] : []
@@ -174,13 +159,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
   useEffect(() => {
     try {
-      const looks = localStorage.getItem("moda_saved_outfits") || localStorage.getItem("button_saved_outfits");
-      if (looks) {
-        const parsed = JSON.parse(looks);
-        if (Array.isArray(parsed)) {
-          setSavedOutfits(parsed);
-        }
-      }
       const addrs = localStorage.getItem("moda_saved_addresses") || localStorage.getItem("button_saved_addresses");
       if (addrs) {
         const parsed = JSON.parse(addrs);
@@ -717,19 +695,19 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
 
         <button
           type="button"
-          onClick={() => setActiveSubView(activeSubView === "saved_looks" ? "overview" : "saved_looks")}
+          onClick={() => setActiveSubView(activeSubView === "addresses" ? "overview" : "addresses")}
           className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-            activeSubView === "saved_looks"
+            activeSubView === "addresses"
               ? "bg-[#2563EB] border-[#2563EB] text-white shadow-md shadow-blue-500/25"
               : "bg-white dark:bg-[#0f172a] border-[#E2E8F0] dark:border-slate-800 text-[#0F172A] dark:text-white hover:border-[#2563EB]/40"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-700 dark:text-violet-400" />
-            <span>{isUz ? "Obrazlar" : "Образы"}</span>
+            <MapPin className="w-4 h-4 text-violet-700 dark:text-violet-400" />
+            <span>{isUz ? "Manzillar" : "Адреса"}</span>
           </div>
           <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-black/10 dark:bg-white/20">
-            {savedOutfits.length}
+            {savedAddresses.length}
           </span>
         </button>
       </div>
@@ -901,8 +879,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             </h3>
             <p className="text-xs text-[#64748B] dark:text-slate-400">
               {isUz
-                ? "Bu o'lchamlar AI Stilistga sizga eng mos keladigan kiyimlarni tanlashga yordam beradi."
-                : "Эти параметры помогут AI стилисту подбирать одежду с идеальной посадкой."}
+                ? "Bu o'lchamlar AI Yordamchiga sizga eng mos keladigan o'lchamlarni aniqlashda yordam beradi."
+                : "Эти параметры помогут AI Помощнику точнее определять подходящие вам размеры."}
             </p>
           </div>
 
@@ -1086,74 +1064,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         </div>
       )}
 
-      {/* D. Saqlangan obrazlar (Saved AI Outfits) */}
-      {activeSubView === "saved_looks" && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-[#E2E8F0] dark:border-slate-800 space-y-4 animate-fade-in shadow-[0_4px_20px_rgba(37,99,235,0.06)] dark:shadow-xl">
-          <div className="flex items-center justify-between">
-            <h3 className="font-black text-sm sm:text-base text-[#0F172A] dark:text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-violet-700 dark:text-violet-400" />
-              <span>{isUz ? "Saqlangan obrazlar" : "Сохраненные образы"}</span>
-            </h3>
-            <span className="text-xs text-[#64748B] dark:text-slate-400">
-              {savedOutfits.length} {isUz ? "ta obraz" : "образов"}
-            </span>
-          </div>
-
-          {savedOutfits.length === 0 ? (
-            <div className="py-12 text-center space-y-3">
-              <Bookmark className="w-10 h-10 mx-auto text-[#64748B] dark:text-slate-400 opacity-40" />
-              <p className="text-xs text-[#64748B] dark:text-slate-400">
-                {isUz
-                  ? "Hozircha saqlangan obrazlar yo'q. AI Mode orqali o'zingizga yoqqan obrazlarni saqlang."
-                  : "Пока нет сохраненных образов. Создайте и сохраните их в разделе AI Mode."}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3.5">
-              {savedOutfits.map((look: SavedOutfitLook, idx: number) => (
-                <div
-                  key={look.id || idx}
-                  className="p-4 rounded-2xl bg-[#F8FAFC] dark:bg-[#1e293b] border border-[#E2E8F0] dark:border-slate-700 space-y-3 hover:border-violet-600/40 transition-all"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-black text-xs sm:text-sm text-[#0F172A] dark:text-white">
-                        {isUz ? look.titleUz : look.titleRu || look.titleUz}
-                      </h4>
-                      <p className="text-[10px] text-[#64748B] dark:text-slate-400 uppercase tracking-wider font-mono">
-                        {look.style}
-                      </p>
-                    </div>
-                    <span className="font-mono font-black text-xs sm:text-sm text-violet-700 dark:text-violet-400">
-                      {formatUzbekCurrency(look.discountedPrice || look.totalPrice)}
-                    </span>
-                  </div>
-
-                  {/* Garments thumbnail row */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {look.items?.map((item: Product, iIdx: number) => (
-                      <div
-                        key={item.id + iIdx}
-                        onClick={() => onSelectProduct(item)}
-                        className="relative aspect-square rounded-xl overflow-hidden bg-white dark:bg-[#0f172a] border border-[#E2E8F0] dark:border-slate-700 cursor-pointer group"
-                      >
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform"
-                          unoptimized
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* E. Yetkazib berish manzillari (Saved Addresses) */}
       {activeSubView === "addresses" && (
         <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-[#E2E8F0] dark:border-slate-800 space-y-4 animate-fade-in shadow-[0_4px_20px_rgba(37,99,235,0.06)] dark:shadow-xl">
@@ -1297,20 +1207,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           <ChevronRight className="w-4 h-4 text-[#94A3B8] group-hover:translate-x-0.5 transition-transform" />
         </button>
 
-        {/* Saqlangan obrazlar */}
-        <button
-          type="button"
-          onClick={() => setActiveSubView("saved_looks")}
-          className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F8FAFC] dark:hover:bg-[#1e293b] transition-colors cursor-pointer group"
-        >
-          <div className="flex items-center gap-3">
-            <Bookmark className="w-5 h-5 text-[#64748B] dark:text-slate-400 group-hover:text-violet-600 transition-colors" />
-            <span className="text-xs sm:text-sm font-bold text-[#0F172A] dark:text-white">
-              {isUz ? "Saqlangan obrazlar" : "Сохраненные образы"}
-            </span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-[#94A3B8] group-hover:translate-x-0.5 transition-transform" />
-        </button>
+
 
         {/* Manzillar */}
         <button

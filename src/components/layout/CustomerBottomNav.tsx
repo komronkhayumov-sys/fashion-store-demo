@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ShoppingBag, MapPin, Sparkles, Clock, User } from "lucide-react";
+import { ShoppingBag, MapPin, Bot, Clock, User } from "lucide-react";
 import { CustomerNavSection, Language } from "@/types";
 
 interface CustomerBottomNavProps {
@@ -71,10 +71,10 @@ export const CustomerBottomNav: React.FC<CustomerBottomNavProps> = ({
       isActive: activeSection === "branches",
     },
     {
-      id: "ai-mode",
-      label: "AI Stylist",
-      icon: <Sparkles className="w-5 h-5 transition-transform" />,
-      isActive: activeSection === "ai-mode",
+      id: "ai-assistant",
+      label: isUz ? "AI Yordamchi" : "AI Помощник",
+      icon: <Bot className="w-5 h-5 transition-transform" />,
+      isActive: activeSection === "ai-assistant",
     },
     {
       id: "orders",
@@ -137,7 +137,7 @@ export const CustomerBottomNav: React.FC<CustomerBottomNavProps> = ({
 
               {/* Label */}
               <span
-                className={`text-[9.5px] font-medium tracking-tight truncate max-w-[62px] leading-none transition-colors ${
+                className={`text-[9.5px] font-medium tracking-tight truncate max-w-[72px] leading-none transition-colors ${
                   isActive
                     ? "text-violet-700 dark:text-white font-bold"
                     : "text-[#64748B] dark:text-slate-400"

@@ -1,102 +1,158 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSettings, saveSettings, getProducts, verifyPin } from "@/lib/storage";
+import { Product, StoreSettings } from "@/types";
 
 export type AssistantRequest = {
   message?: string;
   type?: "chat" | "size_recommendation";
-  height?: number; // cm
-  weight?: number; // kg
+  height?: number;
+  weight?: number;
+  bodyType?: "slim" | "regular" | "broad";
+  fitPreference?: "fitted" | "regular" | "oversize";
+  footCm?: number;
   category?: string;
   lang?: "uz" | "ru";
   geminiApiKey?: string;
   history?: Array<{ sender: "user" | "bot"; text: string }>;
 };
 
-// Size calculation algorithm for men's apparel
-function calculateMenSize(height: number, weight: number, category?: string): {
+type SizeCalculation = {
   apparelSize: string;
   suitSize: string;
   pantsSize: string;
+  matchRate: number;
   adviceUz: string;
   adviceRu: string;
-} {
+};
+
+/**
+ * Shared men's apparel/suit/pants size calculator synchronized with SmartSizeCalculator logic.
+ */
+function calculateMenSize(
+  height: number,
+  weight: number,
+  bodyType: "slim" | "regular" | "broad" = "regular",
+  fitPreference: "fitted" | "regular" | "oversize" = "regular"
+): SizeCalculation {
+  const hM = height / 100;
+  let adjustedBmi = weight / (hM * hM);
+
+  if (bodyType === "slim") adjustedBmi -= 1.2;
+  if (bodyType === "broad") adjustedBmi += 1.8;
+  if (fitPreference === "oversize") adjustedBmi += 1.4;
+  if (fitPreference === "fitted") adjustedBmi -= 0.7;
+
   let apparelSize = "L";
   let suitSize = "50";
-  let pantsSize = "32";
+  let pantsSize = "32-33";
+  let matchRate = 97;
 
-  if (weight < 60) {
+  if (adjustedBmi < 20.5) {
     apparelSize = "S";
     suitSize = "46";
     pantsSize = "29-30";
-  } else if (weight < 72) {
+    matchRate = 95;
+  } else if (adjustedBmi < 23.0) {
     apparelSize = "M";
     suitSize = "48";
     pantsSize = "31-32";
-  } else if (weight < 83) {
+    matchRate = 98;
+  } else if (adjustedBmi < 26.0) {
     apparelSize = "L";
     suitSize = "50";
     pantsSize = "32-33";
-  } else if (weight < 95) {
+    matchRate = 97;
+  } else if (adjustedBmi < 28.5) {
     apparelSize = "XL";
     suitSize = "52";
-    pantsSize = "34-36";
-  } else if (weight < 108) {
+    pantsSize = "34-35";
+    matchRate = 96;
+  } else if (adjustedBmi < 31.5) {
     apparelSize = "2XL";
     suitSize = "54";
     pantsSize = "36";
+    matchRate = 94;
   } else {
     apparelSize = "3XL";
     suitSize = "56";
     pantsSize = "38";
+    matchRate = 93;
   }
 
-  // Adjust for tall and slim or short and broad
-  if (height >= 185 && weight < 78) {
-    apparelSize = "L (Slim Fit / Uzun bichim)";
-    suitSize = "50 (uzun bo'y)";
-  } else if (height >= 190) {
-    if (weight < 85) {
-      apparelSize = "XL (Uzun bichim)";
-      suitSize = "52 (uzun bo'y)";
-      pantsSize = "33-34";
-    } else {
-      apparelSize = "2XL-3XL";
-      suitSize = "54-56";
-      pantsSize = "36-38";
-    }
-  } else if (height < 170 && weight > 85) {
-    apparelSize = "XL-2XL (Erkin bichim)";
-    suitSize = "52-54";
+  // Tall frame sleeve & length safeguard
+  if (height >= 190 && apparelSize === "M") {
+    apparelSize = "L";
+    suitSize = "50";
+  } else if (height >= 190 && apparelSize === "L") {
+    apparelSize = "XL";
+    suitSize = "52";
   }
 
-  const adviceUz = `Sizning bo'yingiz **${height} sm** va vazningiz **${weight} kg** ko'rsatkichlariga ko'ra tavsiya etiladigan o'lchamlar:\n\n` +
-    `• 👕 **Futbolka, polo, xudi va kardiganlar:** **${apparelSize}**\n` +
-    `• 🧥 **Kurtka, bomber va ustki kiyimlar:** **${apparelSize}**\n` +
-    `• 👖 **Klassik shimlar va jinsilar:** **${pantsSize}** (kostyum uchun: **${suitSize}**)\n\n` +
-    `💡 *Maslahat:* Agar kiyimni erkinroq (oversize) kiyishni yoqtirsangiz, bir o'lcham kattaroq olishingiz mumkin. Do'konimiz filiallarida bemalol kiyib ko'rish va o'lchash qulayliklari mavjud!`;
+  const adviceUz =
+    `Bo'yingiz **${height} sm** va vazningiz **${weight} kg** ko'rsatkichlariga ko'ra sizga mos o'lchamlar:\n\n` +
+    `• 👕 **Ustki kiyim (polo, futbolka, sviter, kardigan, kurtka):** **${apparelSize}**\n` +
+    `• 👔 **Klassik kostyum / pidjak:** **${suitSize}**\n` +
+    `• 👖 **Shim va jinsilar:** **${pantsSize}**\n\n` +
+    `✅ Bichim aniqligi: **${matchRate}%**.\n` +
+    `💡 *Maslahat:* Agar kiyim biroz erkinroq turishini xohlasangiz, bir pog'ona katta o'lcham tanlashingiz mumkin.`;
 
-  const adviceRu = `Исходя из вашего роста **${height} см** и веса **${weight} кг** рекомендуемые размеры:\n\n` +
-    `• 👕 **Футболки, поло, худи и кардиганы:** **${apparelSize}**\n` +
-    `• 🧥 **Куртки, бомберы и верхняя одежда:** **${apparelSize}**\n` +
-    `• 👖 **Брюки и джинсы:** **${pantsSize}** (для костюмов: **${suitSize}**)\n\n` +
-    `💡 *Совет:* Если любите более свободную посадку (oversize), рекомендуем взять на размер больше. В наших шоурумах всегда можно комфортно примерить перед покупкой!`;
+  const adviceRu =
+    `По вашему росту **${height} см** и весу **${weight} кг** вам подойдут следующие размеры:\n\n` +
+    `• 👕 **Верх (поло, футболка, свитер, кардиган, куртка):** **${apparelSize}**\n` +
+    `• 👔 **Классический костюм / пиджак:** **${suitSize}**\n` +
+    `• 👖 **Брюки и джинсы:** **${pantsSize}**\n\n` +
+    `✅ Точность подбора: **${matchRate}%**.\n` +
+    `💡 *Совет:* Если предпочитаете свободную посадку (oversize), рекомендуем взять на размер больше.`;
 
-  return { apparelSize, suitSize, pantsSize, adviceUz, adviceRu };
+  return { apparelSize, suitSize, pantsSize, matchRate, adviceUz, adviceRu };
 }
 
-// Extract height & weight from freeform user message if present
+/**
+ * Shoe EU size calculator from foot length in centimeters.
+ */
+function calculateShoeSize(footCm: number): { euSize: number; adviceUz: string; adviceRu: string } {
+  const table = [
+    { maxCm: 24.3, eu: 38 },
+    { maxCm: 24.9, eu: 39 },
+    { maxCm: 25.7, eu: 40 },
+    { maxCm: 26.5, eu: 41 },
+    { maxCm: 27.3, eu: 42 },
+    { maxCm: 28.2, eu: 43 },
+    { maxCm: 29.0, eu: 44 },
+    { maxCm: 31.0, eu: 45 },
+  ];
+  const row = table.find((item) => footCm <= item.maxCm) || table[table.length - 1];
+
+  const adviceUz =
+    `👟 Oyoq kafti uzunligi **${footCm} sm** uchun tavsiya etiladigan poyabzal o'lchami: **${row.eu} (EU)**.\n\n` +
+    `📏 **O'lchov jadvali:**\n` +
+    `• 24.5 sm → **39** | 25.5 sm → **40** | 26.5 sm → **41**\n` +
+    `• 27.0 sm → **42** | 28.0 sm → **43** | 29.0 sm → **44**\n\n` +
+    `💡 *Maslahat:* Krossovka yoki qishki etik olayotganda 0.5 sm zaxira (yarim razmer kattaroq) qulayroq bo'ladi.`;
+
+  const adviceRu =
+    `👟 Для длины стопы **${footCm} см** рекомендуемый размер обуви: **${row.eu} (EU)**.\n\n` +
+    `📏 **Таблица размеров:**\n` +
+    `• 24.5 см → **39** | 25.5 см → **40** | 26.5 см → **41**\n` +
+    `• 27.0 см → **42** | 28.0 см → **43** | 29.0 см → **44**\n\n` +
+    `💡 *Совет:* Для кроссовок и ботинок лучше оставлять небольшой запас 0.5 см.`;
+
+  return { euSize: row.eu, adviceUz, adviceRu };
+}
+
 function extractHeightAndWeight(text: string): { height?: number; weight?: number } | null {
   const clean = text.toLowerCase();
+  const hwMatch = clean.match(
+    /(?:bo['`’]?y(?:im)?\s*[:=]?\s*(\d{2,3})|(\d{2,3})\s*(?:sm|см))\s*.*?(?:vazn(?:im)?\s*[:=]?\s*(\d{2,3})|(\d{2,3})\s*(?:kg|кг))/i
+  );
   let height: number | undefined;
   let weight: number | undefined;
 
-  // Pattern: "bo'yim 180 sm vaznim 78 kg" or "180/78"
-  const hwMatch = clean.match(/(?:bo['`’]?y(?:im)?\s*[:=]?\s*(\d{2,3})|(\d{2,3})\s*(?:sm|см))\s*.*?(?:vazn(?:im)?\s*[:=]?\s*(\d{2,3})|(\d{2,3})\s*(?:kg|кг))/i);
   if (hwMatch) {
     height = Number(hwMatch[1] || hwMatch[2]);
     weight = Number(hwMatch[3] || hwMatch[4]);
   } else {
-    const pairMatch = clean.match(/\b(1[5-9]\d|2[0-1]\d)\s*(?:sm|см)?\s*[\/,;|\s]\s*(\d{2,3})\s*(?:kg|кг)?\b/);
+    const pairMatch = clean.match(/\b(1[4-9]\d|2[0-2]\d)\s*(?:sm|см)?\s*[\/,;|\-\s]+\s*(\d{2,3})\s*(?:kg|кг)?\b/);
     if (pairMatch) {
       height = Number(pairMatch[1]);
       weight = Number(pairMatch[2]);
@@ -109,33 +165,84 @@ function extractHeightAndWeight(text: string): { height?: number; weight?: numbe
   return null;
 }
 
-// Extract single height if weight is not specified
 function extractSingleHeight(text: string): number | null {
   const clean = text.toLowerCase();
-  // "bo'yim 196", "boyim 196", "196 sm", "rost 196"
-  const match = clean.match(/(?:bo['`’]?y(?:im)?|rost|рост)\s*[:=]?\s*(\d{2,3})/i) ||
-                clean.match(/\b(1[4-9]\d|2[0-2]\d)\s*(?:sm|см)\b/i);
+  const match =
+    clean.match(/(?:bo['`’]?y(?:im)?|rost|рост)\s*[:=]?\s*(\d{2,3})/i) ||
+    clean.match(/\b(1[4-9]\d|2[0-2]\d)\s*(?:sm|см)\b/i);
   if (match) {
     const val = Number(match[1]);
     if (val >= 140 && val <= 225) return val;
   }
-  // Single number like "196" if query is short
   if (/^\s*(1[4-9]\d|2[0-2]\d)\s*$/.test(clean)) {
     return Number(clean.trim());
   }
   return null;
 }
 
-// Extract single weight if height is not specified
 function extractSingleWeight(text: string): number | null {
   const clean = text.toLowerCase();
-  const match = clean.match(/(?:vazn(?:im)?|ves|вес)\s*[:=]?\s*(\d{2,3})/i) ||
-                clean.match(/\b(\d{2,3})\s*(?:kg|кг)\b/i);
+  const match =
+    clean.match(/(?:vazn(?:im)?|ves|вес)\s*[:=]?\s*(\d{2,3})/i) ||
+    clean.match(/\b(\d{2,3})\s*(?:kg|кг)\b/i);
   if (match) {
     const val = Number(match[1]);
     if (val >= 40 && val <= 180) return val;
   }
+  if (/^\s*(\d{2,3})\s*$/.test(clean)) {
+    const val = Number(clean.trim());
+    if (val >= 40 && val <= 139) return val;
+  }
   return null;
+}
+
+function extractFootLengthCm(text: string): number | null {
+  const clean = text.toLowerCase().replace(",", ".");
+  const match = clean.match(/\b(2[3-9](?:\.\d)?|30(?:\.\d)?)\s*(?:sm|см)\b/);
+  if (match) {
+    const val = Number(match[1]);
+    if (val >= 23 && val <= 31) return val;
+  }
+  return null;
+}
+
+function findMatchingProducts(inStockProducts: Product[], query: string): Product[] {
+  const tokens = query
+    .toLowerCase()
+    .split(/[^a-z0-9а-яё'`’]+/i)
+    .filter((w) => w.length >= 3);
+
+  if (tokens.length === 0) return [];
+
+  return inStockProducts
+    .filter((p) => {
+      const hay = `${p.name} ${p.nameRu || ""} ${p.description} ${p.category}`.toLowerCase();
+      return tokens.some((tok) => hay.includes(tok));
+    })
+    .slice(0, 5);
+}
+
+function formatDeliveryInfo(settings: StoreSettings, isUz: boolean): string {
+  const tashFee = settings.deliveryPriceTashkent ?? 25000;
+  const tashFree = settings.deliveryFreeThresholdTashkent ?? 500000;
+  const regFee = settings.deliveryPriceRegions ?? 40000;
+  const regFree = settings.deliveryFreeThresholdRegions ?? 1000000;
+
+  if (isUz) {
+    return (
+      `🚚 **Yetkazib berish (Dostavka) shartlari:**\n\n` +
+      `• 🏙️ **Toshkent shahri bo'ylab:** **${tashFee.toLocaleString("uz-UZ")} so'm** (${tashFree.toLocaleString("uz-UZ")} so'mdan yuqori xaridlarga — **BEPUL!**). Muddati: 1–3 soat ichida kuryer orqali.\n` +
+      `• 📦 **Viloyatlarga:** **${regFee.toLocaleString("uz-UZ")} so'm** (${regFree.toLocaleString("uz-UZ")} so'mdan yuqori xaridlarga — **BEPUL!**). Muddati: 1–2 ish kunida.\n` +
+      `• 🏬 **Filialdan olib ketish:** Do'konimizga kelib kiyib ko'rgan holda bepul olib ketishingiz mumkin.\n\n` +
+      `Saytdan buyurtma berishingiz bilan ma'lumotlar darhol Telegram menejerimizga yetib boradi.`
+    );
+  }
+  return (
+    `🚚 **Условия доставки:**\n\n` +
+    `• 🏙️ **По Ташкенту:** **${tashFee.toLocaleString("ru-RU")} сум** (при заказе от ${tashFree.toLocaleString("ru-RU")} сум — **БЕСПЛАТНО!**). Доставка за 1–3 часа.\n` +
+    `• 📦 **По регионам Узбекистана:** **${regFee.toLocaleString("ru-RU")} сум** (от ${regFree.toLocaleString("ru-RU")} сум — **БЕСПЛАТНО!**). Срок: 1–2 рабочих дня.\n` +
+    `• 🏬 **Самовывоз из филиала:** Бесплатно, с удобной примеркой на месте.`
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -146,7 +253,7 @@ export async function POST(req: NextRequest) {
     const userMessage = body.message?.trim() || "";
     const lowerMsg = userMessage.toLowerCase();
 
-    // Check if the user pasted an AI Studio API key directly into the chat:
+    // Admin Gemini API key activation shortcut
     const apiKeyMatch = userMessage.match(/\b(AIzaSy[A-Za-z0-9_-]{33})\b/);
     if (apiKeyMatch) {
       const detectedKey = apiKeyMatch[1];
@@ -156,71 +263,148 @@ export async function POST(req: NextRequest) {
         try {
           await saveSettings({ geminiApiKey: detectedKey });
         } catch (e) {
-          console.warn("Could not save settings:", e);
+          console.warn("Could not save Gemini key:", e);
         }
       }
       return NextResponse.json({
         success: true,
         reply: isUz
-          ? `🎉 **Google Gemini API kaliti qabul qilindi!**\n\n` +
-            `Haqiqiy jonli Google Gemini generativ sun'iy intellekti faollashdi 🤖✨\n\n` +
-            `Endi siz men bilan xuddi ChatGPT / Gemini kabi har qanday mavzuda erkin suhbatlashishingiz, kiyimlar va obrazlar haqida so'rashingiz mumkin. Savolingizni yozing!`
-          : `🎉 **Google Gemini API ключ принят!**\n\n` +
-            `Активирован реальный живой генеративный AI Google Gemini 🤖✨ Задайте мне любой вопрос!`,
+          ? `✅ **Google Gemini API kaliti ulandi!**\n\nAI Yordamchi jonli rejimda ishlashga tayyor.`
+          : `✅ **Ключ Google Gemini API подключен!**\n\nAI Помощник готов к работе в реальном времени.`,
         savedApiKey: isAdmin ? detectedKey : undefined,
         provider: "gemini-activated",
       });
     }
 
-    // 1. Direct Size Recommendation Flow
+    // 1. Direct interactive Size Recommendation request
     if (body.type === "size_recommendation") {
+      if (body.footCm !== undefined) {
+        const footCm = Number(body.footCm);
+        if (isNaN(footCm) || footCm < 21 || footCm > 33) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: isUz
+                ? "Oyoq uzunligi 21–33 sm oralig'ida bo'lishi kerak"
+                : "Длина стопы должна быть от 21 до 33 см",
+            },
+            { status: 400 }
+          );
+        }
+        const shoe = calculateShoeSize(footCm);
+        return NextResponse.json({
+          success: true,
+          reply: isUz ? shoe.adviceUz : shoe.adviceRu,
+          shoeSize: String(shoe.euSize),
+        });
+      }
+
       const height = Number(body.height);
       const weight = Number(body.weight);
       if (isNaN(height) || isNaN(weight) || height < 100 || height > 250 || weight < 30 || weight > 250) {
-        return NextResponse.json({
-          success: false,
-          error: isUz ? "Bo'y (100-250 sm) yoki vazn (30-250 kg) oralig'ida bo'lishi kerak" : "Рост (100-250 см) или вес (30-250 кг) вне допустимого диапазона",
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: isUz
+              ? "Bo'y (100-250 sm) va vazn (30-250 kg) oralig'ida bo'lishi kerak"
+              : "Рост (100-250 см) и вес (30-250 кг) должны быть в допустимом диапазоне",
+          },
+          { status: 400 }
+        );
       }
-      const calculation = calculateMenSize(height, weight, body.category);
-      const text = isUz ? calculation.adviceUz : calculation.adviceRu;
 
+      const calc = calculateMenSize(height, weight, body.bodyType || "regular", body.fitPreference || "regular");
       return NextResponse.json({
         success: true,
-        reply: text,
-        size: calculation.apparelSize,
-        suitSize: calculation.suitSize,
+        reply: isUz ? calc.adviceUz : calc.adviceRu,
+        size: calc.apparelSize,
+        suitSize: calc.suitSize,
+        pantsSize: calc.pantsSize,
+        matchRate: calc.matchRate,
       });
     }
 
-    // Check if freeform text has both height & weight
+    // 2. Foot length in cm -> Shoe EU size
+    const footCm = extractFootLengthCm(lowerMsg);
+    if (footCm) {
+      const shoe = calculateShoeSize(footCm);
+      return NextResponse.json({
+        success: true,
+        reply: isUz ? shoe.adviceUz : shoe.adviceRu,
+        shoeSize: String(shoe.euSize),
+      });
+    }
+
+    // 3. Height + Weight in current message or combined from previous user turns
     const extractedHW = extractHeightAndWeight(lowerMsg);
-    if (extractedHW && extractedHW.height && extractedHW.weight) {
-      const calculation = calculateMenSize(extractedHW.height, extractedHW.weight);
+    if (extractedHW?.height && extractedHW?.weight) {
+      const calc = calculateMenSize(extractedHW.height, extractedHW.weight);
       return NextResponse.json({
         success: true,
-        reply: isUz ? calculation.adviceUz : calculation.adviceRu,
-        size: calculation.apparelSize,
+        reply: isUz ? calc.adviceUz : calc.adviceRu,
+        size: calc.apparelSize,
       });
     }
 
-    // 2. Prepare Context for Chat with Live Settings & Active Products
+    // Check recent conversation history if user gave height first, then weight (or vice versa)
+    const prevUserTexts = Array.isArray(body.history)
+      ? body.history.filter((h) => h.sender === "user").slice(-3).map((h) => h.text)
+      : [];
+    const currentH = extractSingleHeight(lowerMsg);
+    const currentW = extractSingleWeight(lowerMsg);
+
+    if (currentW && !currentH) {
+      for (let i = prevUserTexts.length - 1; i >= 0; i--) {
+        const prevH = extractSingleHeight(prevUserTexts[i]);
+        if (prevH) {
+          const calc = calculateMenSize(prevH, currentW);
+          return NextResponse.json({
+            success: true,
+            reply: isUz ? calc.adviceUz : calc.adviceRu,
+            size: calc.apparelSize,
+          });
+        }
+      }
+    }
+    if (currentH && !currentW) {
+      for (let i = prevUserTexts.length - 1; i >= 0; i--) {
+        const prevW = extractSingleWeight(prevUserTexts[i]);
+        if (prevW) {
+          const calc = calculateMenSize(currentH, prevW);
+          return NextResponse.json({
+            success: true,
+            reply: isUz ? calc.adviceUz : calc.adviceRu,
+            size: calc.apparelSize,
+          });
+        }
+      }
+    }
+
+    // 4. Load live Store Settings & Active Products
     const settings = await getSettings();
     const products = await getProducts();
-    const inStockProducts = products.filter((p) => p.isAvailable);
+    const inStockProducts = products.filter((p) => p.isAvailable !== false);
     const storeName = settings.storeName || "MODA UZ";
-    const storeUpper = storeName.toUpperCase();
+    const branches = settings.branches || [];
 
-    const branchesList = settings.branches
-      .map((b, i) => `${i + 1}. ${b.name}: ${b.address} (Mo'ljal: ${b.landmark}, Tel: ${b.phone})`)
-      .join("\n");
+    const branchesList =
+      branches.length > 0
+        ? branches
+            .map((b, i) => `${i + 1}. ${b.name}: ${b.address} (Mo'ljal: ${b.landmark}, Tel: ${b.phone})`)
+            .join("\n")
+        : isUz
+        ? "Toshkent shahri"
+        : "г. Ташкент";
 
     const catalogSummary = inStockProducts
-      .slice(0, 20)
-      .map((p) => `• ${p.name} — ${p.price.toLocaleString("uz-UZ")} so'm (O'lchamlar: ${p.sizes.join(", ")}, Kategoriya: ${p.category})`)
+      .slice(0, 25)
+      .map(
+        (p) =>
+          `• ${p.name} — ${p.price.toLocaleString("uz-UZ")} so'm (O'lchamlar: ${p.sizes.join(", ")}, Kategoriya: ${p.category})`
+      )
       .join("\n");
 
-    // 3. Resolve GEMINI API KEY (from client payload, headers, env, or store settings)
+    // 5. Optional Live Gemini Integration
     const geminiKey =
       body.geminiApiKey?.trim() ||
       req.headers.get("x-gemini-key")?.trim() ||
@@ -229,31 +413,35 @@ export async function POST(req: NextRequest) {
 
     if (geminiKey) {
       try {
-        const systemInstruction = `
-Siz ${settings.storeName} (${settings.storeHandle}) erkaklar kiyimlari do'konining professional, aqlli va do'stona AI stilist maslahatchisisiz.
-Foydalanuvchi siz bilan xuddi insondek erkin suhbatlashadi. Har qanday savolga (hazil, salomlashish, o'lcham, kiyim tanlash, tadbirlar, narxlar, manzil va h.k.) jonli, samimiy va chiroyli javob bering.
+        const tashFee = settings.deliveryPriceTashkent ?? 25000;
+        const tashFree = settings.deliveryFreeThresholdTashkent ?? 500000;
+        const regFee = settings.deliveryPriceRegions ?? 40000;
+        const regFree = settings.deliveryFreeThresholdRegions ?? 1000000;
 
-Qoidalaringiz:
-1. Agar bo'y aytsa (masalan bo'yim 196 sm), baland bo'yli erkaklar uchun kiyim tavsiyalarini (XL-2XL, uzun bichimli ko'ylaklar, to'g'ri bichimli jinsi) bering va vaznini so'rang.
-2. Agar rasm generatsiya so'rasa, to'g'ridan-to'g'ri yangi rasm chiza olmasligingizni, lekin ${storeName} katalogidagi 20+ turdagi haqiqiy kiyimlar fotosuratlarini va obrazlarini ko'rsatib bera olishingizni ayting.
-3. Agar "qaysi AI" yoki "kim bu" deb so'rasa, Google Gemini generativ modeli asosida ishlovchi ${storeName} AI stilisti ekanligingizni ayting.
-4. Tadbirlar (bazm, to'y, tug'ilgan kun, ofis) uchun do'kondagi kiyimlardan (kardigan, bomber, jinsi, chinos, Oxford ko'ylak, zamsh lofer, krossovka, jiletka) boshdan-oyoq mukammal obraz tuzib bering.
-5. Do'kon ma'lumotlari:
-- Do'kon: ${settings.storeName} (${settings.storeHandle})
-- Filiallar: ${branchesList}
-- Ish vaqti: ${settings.workingHoursUz} (Har kuni 10:00 dan 22:00 gacha).
-- Telefonlar: ${settings.phone1}, ${settings.phone2}. Telegram: @modauz_demo, Instagram: @modauz_demo.
-- Yetkazib berish: Toshkent bo'ylab 1-3 soatda (Yandex/BTS), viloyatlarga 1-2 kunda pochta orqali.
-- To'lov: Click, Payme, Uzum, Uzcard, Humo, naqd pul.
-- Mahsulotlar:
+        const systemInstruction = `
+Siz ${storeName} (${settings.storeHandle}) onlayn do'konining rasmiy AI Yordamchisisiz.
+Sizning asosiy vazifangiz FAQAT ikkita yo'nalishda mijozlarga aniq va samimiy yordam berish:
+1. O'lchamlarni aniqlash: bo'y (sm), vazn (kg), tana tuzilishi yoki oyoq uzunligiga (sm) ko'ra kiyim (S/M/L/XL/2XL/3XL), kostyum (46-56), shim (29-38) va poyabzal (38-45) o'lchamini aniq hisoblab berish.
+2. Do'kon haqidagi xabarlar va savollarga javob berish: filiallar manzili, ish vaqti, telefon/Telegram/Instagram aloqasi, yetkazib berish narxlari va muddati, to'lov turlari, mahsulotlar mavjudligi, narxlari va o'lchamlari haqida aniq ma'lumot berish.
+
+Qoidalar:
+- O'zingizni "stilist" yoki "obraz tuzuvchi" deb atamang. Siz ${storeName} do'konining AI Yordamchisisiz.
+- Do'kon haqidagi real ma'lumotlar:
+  * Do'kon nomi: ${storeName} (${settings.storeHandle})
+  * Ish vaqti: ${settings.workingHoursUz}
+  * Telefonlar: ${settings.phone1}${settings.phone2 ? `, ${settings.phone2}` : ""}
+  * Instagram: ${settings.instagramUrl} | Telegram: ${settings.telegramUrl}
+  * Filiallar:\n${branchesList}
+  * Yetkazib berish: Toshkent ${tashFee.toLocaleString("uz-UZ")} so'm (${tashFree.toLocaleString("uz-UZ")} so'mdan bepul, 1-3 soat), Viloyatlar ${regFee.toLocaleString("uz-UZ")} so'm (${regFree.toLocaleString("uz-UZ")} so'mdan bepul, 1-2 ish kuni).
+  * To'lovlar: Click, Payme, Uzum Bank, Uzcard/Humo, Naqd pul. Karta: ${settings.cardNumber} (${settings.cardHolder}).
+  * Almashtirish/Qaytarish: Kiyilmagan va birkasi saqlangan mahsulotni boshqa o'lchamga almashtirib berish mumkin.
+- Mavjud mahsulotlar katalogi:
 ${catalogSummary}
 
-Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, samimiy va chiroyli formatda javob bering.
+Mijoz yozgan tilda (${isUz ? "o'zbek" : "rus"}) qisqa, tushunarli va do'stona javob bering.
 `.trim();
 
-        // Build multi-turn contents
         const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
-
         if (Array.isArray(body.history)) {
           for (const item of body.history) {
             if (item && item.text && typeof item.text === "string") {
@@ -264,11 +452,7 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
             }
           }
         }
-
-        contents.push({
-          role: "user",
-          parts: [{ text: userMessage }],
-        });
+        contents.push({ role: "user", parts: [{ text: userMessage }] });
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 7000);
@@ -281,18 +465,12 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
               headers: { "Content-Type": "application/json" },
               signal: controller.signal,
               body: JSON.stringify({
-                systemInstruction: {
-                  parts: [{ text: systemInstruction }],
-                },
+                systemInstruction: { parts: [{ text: systemInstruction }] },
                 contents,
-                generationConfig: {
-                  maxOutputTokens: 850,
-                  temperature: 0.75,
-                },
+                generationConfig: { maxOutputTokens: 700, temperature: 0.6 },
               }),
             }
           );
-
           clearTimeout(timeoutId);
 
           if (geminiRes.ok) {
@@ -311,534 +489,169 @@ Mijoz qaysi tilda yozsa (${isUz ? "o'zbek" : "rus"}), o'sha tilda erkin, jonli, 
           console.warn("Gemini fetch timed out or failed:", fetchErr);
         }
       } catch (geminiError) {
-        console.warn("Gemini error, using conversational styling engine:", geminiError);
+        console.warn("Gemini error, using built-in assistant engine:", geminiError);
       }
     }
 
-    // 4. Comprehensive Conversational & Styling AI Engine (Zero Generic Boilerplate)
+    // 6. Built-in Deterministic Size & Store Q&A Engine
     let reply = "";
 
-    // A. SINGLE HEIGHT (e.g. "boyim 196", "bo'yim 185", "196 sm")
-    const singleHeight = extractSingleHeight(lowerMsg);
-    if (singleHeight) {
-      if (singleHeight >= 190) {
-        reply = isUz
-          ? `Sizning bo'yingiz **${singleHeight} sm** — bu juda baland va ko'rkam bo'y! 🔝\n\n` +
-            `Baland bo'yli erkaklar uchun kiyim tanlash bo'yicha muhim tavsiyalarimiz:\n\n` +
-            `• 👕 **Kardigan va ko'ylaklar:** Yenglari va bel qismi kalta bo'lib qolmasligi uchun kamida **XL** yoki **2XL** o'lcham ma'qul. Do'konimizdagi **Oksford uzun yengli paxta ko'ylak** (250,000 so'm) va **Klassik zamokli trikotaj kardigan** (280,000 so'm) baland qomatda juda nufuzli turadi.\n` +
-            `• 🧥 **Kurtkalar:** **Yengil bahor-kuzgi bomber kurtka** (420,000 so'm, XL-2XL) elkalarni keng va proporsional ko'rsatadi.\n` +
-            `• 👖 **Shim va Jinsilar:** To'g'ri bichimli **Klassik to'g'ri bichimli jinsi shim** (320,000 so'm, 33-36 razmerlar) uzun bo'yga ideal tushadi.\n\n` +
-            `💡 *Sizga aniq o'lcham (razmer) hisoblab berishim uchun taxminiy vazningizni (kg) ham ayta olasizmi?*`
-          : `Ваш рост **${singleHeight} см** — отличный высокий рост! 🔝\n\n` +
-            `Для высоких мужчин рекомендуем:\n` +
-            `• 👕 Рубашки **Oxford Long Sleeve** и кардиганы в размерах **XL–2XL**, чтобы длина рукава была идеальной.\n` +
-            `• 🧥 Бомбер **Lightweight Bomber** подчеркнет линию плеч.\n` +
-            `• 👖 Прямые джинсы **Straight Fit** (33–36) обеспечат правильную посадку по длине.\n\n` +
-            `💡 *Подскажите ваш примерный вес (кг), чтобы я рассчитал точный размер?*`;
-      } else if (singleHeight >= 170) {
-        reply = isUz
-          ? `Sizning bo'yingiz **${singleHeight} sm** — erkaklar uchun eng qulay va standart o'lchamlar mos tushadigan bo'y! 👔\n\n` +
-            `Do'konimizdagi **M, L va XL** o'lchamdagi barcha kiyimlar sizga a'lo darajada to'g'ri keladi.\n\n` +
-            `Sizga aniq razmer (masalan M yoki L, shimlar uchun 31 yoki 32) hisoblab berishim uchun **vazningizni (kg)** ham yozib yubora olasizmi?`
-          : `Ваш рост **${singleHeight} см** — стандартный гармоничный рост! 👔 Напишите ваш примерный вес в кг, и я подберу точные размеры верха и брюк!`;
-      } else {
-        reply = isUz
-          ? `Sizning bo'yingiz **${singleHeight} sm**.\n\n` +
-            `Kichikroq va o'rtacha bo'yda qomatni yanada balandroq va ko'rkam ko'rsatish sirlari:\n` +
-            `• **Klassik chinos shimlari** (290,000 so'm) — oyoqni uzunroq ko'rsatadi.\n` +
-            `• **Trikotaj yoqali polo ko'ylak** (220,000 so'm, S-M) va ixcham bomber kurtka qomatni yig'ib turadi.\n\n` +
-            `Aniq razmer hisoblashim uchun vazningizni ham ayta olasizmi?`
-          : `Ваш рост **${singleHeight} см**. Напишите ваш вес в кг, чтобы я рассчитал точный размер!`;
-      }
+    if (currentH) {
+      const approxSuggestion =
+        currentH >= 190
+          ? isUz
+            ? "Uzun bo'y uchun odatda **XL–2XL** ustki kiyim va **33–36** shimlar qulayroq bo'ladi."
+            : "Для высокого роста обычно подходят **XL–2XL** верх и **33–36** брюки."
+          : currentH >= 173
+          ? isUz
+            ? "Bu bo'y uchun vaznga qarab asosan **M, L yoki XL** o'lchamlar mos keladi."
+            : "Для такого роста обычно подходят размеры **M, L или XL** в зависимости от веса."
+          : isUz
+          ? "Bu bo'y uchun asosan **S yoki M** (shimlar **29–31**) o'lchamlar yaxshi tushadi."
+          : "Для этого роста обычно хорошо подходят **S или M** (брюки **29–31**).";
 
-    // B. SINGLE WEIGHT (e.g. "vaznim 85 kg", "80 kg")
-    } else if (extractSingleWeight(lowerMsg)) {
-      const w = extractSingleWeight(lowerMsg)!;
       reply = isUz
-        ? `Vazningiz **${w} kg** ekanligini qabul qildim ⚖️\n\n` +
-          `Ushbu vazn uchun tavsiya qilinadigan o'lcham: **${w < 65 ? "S-M" : w < 78 ? "M-L" : w < 92 ? "L-XL" : "2XL-3XL"}**.\n\n` +
-          `Aniq razmer (yelka, yeng uzunligi va shim uzunligi) to'g'ri tushishi uchun **bo'yingizni (sm)** ham yozib yuboring!`
-        : `Ваш вес **${w} кг**. Подскажите ваш рост (см), чтобы я рассчитал точный размер верха и брюк!`;
-
-    // C. RASM GENERATSIYA / IMAGE GENERATION
+        ? `Bo'yingiz **${currentH} sm** ekanini belgiladim 📏\n\n${approxSuggestion}\n\nAniq o'lchamni hisoblashim uchun **vazningizni (kg)** ham yozib yuboring (masalan: *75 kg*). Yoki chap/yuqoridagi **"O'lchamni aniqlash"** bo'limidan slayder orqali ham hisoblashingiz mumkin.`
+        : `Принято, ваш рост **${currentH} см** 📏\n\n${approxSuggestion}\n\nНапишите также ваш примерный **вес (кг)** (например: *75 кг*), чтобы я рассчитал точный размер.`;
+    } else if (currentW) {
+      const est = currentW < 65 ? "S–M" : currentW < 78 ? "M–L" : currentW < 92 ? "L–XL" : "2XL–3XL";
+      reply = isUz
+        ? `Vazningiz **${currentW} kg** uchun taxminiy o'lcham: **${est}** ⚖️\n\nAniq razmerni (yelka, kostyum va shim uzunligini) hisoblashim uchun **bo'yingizni (sm)** ham yozib yuboring (masalan: *178 sm*).`
+        : `Для веса **${currentW} кг** примерный размер: **${est}** ⚖️\n\nНапишите также ваш **рост (см)** (например: *178 см*), чтобы я рассчитал точный размер.`;
     } else if (
-      lowerMsg.includes("rasm generatsiya") ||
-      lowerMsg.includes("rasm chiz") ||
-      lowerMsg.includes("rasm yarat") ||
-      lowerMsg.includes("rasm chiqar") ||
-      lowerMsg.includes("foto generat") ||
-      lowerMsg.includes("сгенерируй фото") ||
-      lowerMsg.includes("нарисуй") ||
-      lowerMsg.includes("картинк")
+      /poyabzal|oyoq|krossovka|lofer|etik|tufli|обув|стоп|кроссовк|лофер/i.test(lowerMsg) &&
+      /razmer|o'lcham|olcham|размер|sm|см|qanday|aniq/i.test(lowerMsg)
     ) {
       reply = isUz
-        ? `Men **${storeName}** matnli sun'iy intellekt maslahatchisiman va to'g'ridan-to'g'ri yangi rasm generatsiya qila (chiza) olmayman 🎨\n\n` +
-          `Lekin men sizga do'konimiz katalogidagi **20+ turdagi haqiqiy kiyimlar, poyabzal va to'liq obrazlarning real fotosuratlarini** ko'rsatib, narxi bilan tavsiya qila olaman!\n\n` +
-          `Masalan, quyidagi kiyimlardan birini so'rasangiz, ularning haqiqiy suratini ko'rsataman:\n` +
-          `• 🧥 **Yengil bomber kurtka** (420,000 so'm)\n` +
-          `• 🧶 **Klassik zamokli kardigan** (280,000 so'm)\n` +
-          `• 👖 **Chinos va jinsi shimlar** (290,000 – 320,000 so'm)\n` +
-          `• 👞 **Zamshli loferlar (Loro Piana)** (450,000 so'm)\n` +
-          `• 👔 **Oksford paxta ko'ylaklari** (250,000 so'm)\n\n` +
-          `Qaysi kiyimimiz fotosurati va ko'rinishini ko'rmoqchisiz?`
-        : `Я текстовый AI-стилист **${storeName}** и не создаю картинки напрямую 🎨\n\n` +
-          `Однако я могу показать вам реальные фотографии товаров из нашего каталога (бомберы, кардиганы, джинсы, лоферы, костюмы) с актуальными ценами и наличием в шоурумах Ташкента! О какой вещи рассказать подробнее?`;
-
-    // D. QAYSI AI / QAYSI MODEL / GEMINI / CHATGPT / SUN'IY INTELLEKT
-    } else if (
-      lowerMsg.includes("qaysi ai") ||
-      lowerMsg.includes("qanaqa ai") ||
-      lowerMsg.includes("qaysi model") ||
-      lowerMsg.includes("gemini") ||
-      lowerMsg.includes("chatgpt") ||
-      lowerMsg.includes("qaysi sun'iy") ||
-      lowerMsg.includes("какой ии") ||
-      lowerMsg.includes("какая модель")
-    ) {
+        ? `👟 **Poyabzal o'lchamini aniqlash qo'llanmasi:**\n\n` +
+          `Oyoq kaftingizni oq qog'ozga qo'yib, tovondan bosh barmoq uchigacha santimetrda o'lchang:\n` +
+          `• **24.5 sm** → **39** razmer\n` +
+          `• **25.5 sm** → **40** razmer\n` +
+          `• **26.5 sm** → **41** razmer\n` +
+          `• **27.0 sm** → **42** razmer\n` +
+          `• **28.0 sm** → **43** razmer\n` +
+          `• **29.0 sm** → **44** razmer\n\n` +
+          `Oyoq uzunligingizni yozing (masalan: *"27 sm"*) — aniq razmeringizni darhol aytib beraman!`
+        : `👟 **Как определить размер обуви:**\n\n` +
+          `Измерьте длину стопы от пятки до большого пальца в см:\n` +
+          `• **24.5 см** → **39** | **25.5 см** → **40** | **26.5 см** → **41**\n` +
+          `• **27.0 см** → **42** | **28.0 см** → **43** | **29.0 см** → **44**\n\n` +
+          `Напишите длину вашей стопы (например: *"27 см"*), и я назову точный размер!`;
+    } else if (/almashtir|qaytar|vozvrat|kafolat|sifat|обмен|возврат|гаранти/i.test(lowerMsg)) {
       reply = isUz
-        ? `Do'konimiz tizimiga eng ilg'or **Google Gemini (bepul 1.5-Flash va 2.0-Flash)** generativ sun'iy intellekti to'liq integratsiya qilingan 🤖⚡\n\n` +
-          `U qanday ishlaydi?\n` +
-          `• Tizim Google Gemini bilan bevosita bog'langan bo'lib, har qanday savolga erkin, jonli va insondek tabiiy javob bera oladi.\n` +
-          `• Shuningdek, tizimga **${storeName}** do'konining barcha 20 ta mahsuloti, narxlar, ranglar nazariyasi va Toshkentdagi 3 ta filial ma'lumotlari kiritilgan.\n\n` +
-          `💡 *Agar sizda Google AI Studio'dan olingan bepul API kalit bo'lsa, uni to'g'ridan-to'g'ri shu chatga yuborishingiz mumkin (masalan: \`AIzaSy...\`) yoki \`/admin\` paneliga kiritishingiz mumkin. Shunda AI to'liq cheksiz jonli generativ rejimda ishlaydi!*\n\n` +
-          `Menga kiyimlar, tadbirlar yoki do'konimiz haqida istalgan savolingizni bering, bajonidil javob beraman!`
-        : `В наш магазин интегрирован **Google Gemini (1.5-Flash & 2.0-Flash)** — передовой генеративный ИИ от Google 🤖⚡\n\n` +
-          `Он обучен на каталоге ${storeName}, правилах подбора мужского стиля и размерах. Вы можете свободно общаться и задавать любые вопросы!`;
-
-    // E. NIMALAR QILA OLASAN / QOBILIYAT / IMKONIYATLAR / VAZIFANG
-    } else if (
-      lowerMsg.includes("nimalar qila olasan") ||
-      lowerMsg.includes("nima qila olasan") ||
-      lowerMsg.includes("nima qila oladi") ||
-      lowerMsg.includes("nimalarga qodirsan") ||
-      lowerMsg.includes("qobiliyat") ||
-      lowerMsg.includes("imkoniyat") ||
-      lowerMsg.includes("vazifang") ||
-      lowerMsg.includes("nima qilasiz") ||
-      lowerMsg.includes("qanday yordam") ||
-      lowerMsg.includes("что ты умеешь") ||
-      lowerMsg.includes("какие возможности") ||
-      lowerMsg.includes("чем можешь помочь")
-    ) {
+        ? `🔄 **Almashtirish va qaytarish tartibi:**\n\n` +
+          `• Agar buyurtma qilingan kiyim yoki poyabzal o'lchami to'g'ri kelmasa, **kiyilmagan, yuvilmagan va yorlig'i (birkasi) saqlangan** holda 14 kun ichida boshqa mos o'lchamga almashtirib beramiz.\n` +
+          `• Almashtirish uchun bog'lanish: **${settings.phone1}**`
+        : `🔄 **Условия обмена и возврата:**\n\n` +
+          `• Если размер не подошел, мы обменяем товар на подходящий в течение 14 дней при сохранении товарного вида и бирок.\n` +
+          `• Контакт для обмена: **${settings.phone1}**`;
+    } else if (/razmer|o'lcham|olcham|razmerim|размер|подобрать/i.test(lowerMsg)) {
       reply = isUz
-        ? `Men **${storeName}** do'konining shaxsiy sun'iy intellekt (AI) stilist maslahatchisiman 👔🤖\n\n` +
-          `Sizga quyidagi barcha yo'nalishlarda professional darajada yordam bera olaman:\n\n` +
-          `• 🥂 **Har qanday tadbirga tayyor Look (obraz) tuzish:**\n` +
-          `  Bazm (vecher), to'y, do'stlaringizning tug'ilgan kuni, romantik uchrashuv, ofis yoki kundalik kiyinish uchun do'kondagi kiyimlarimizdan boshdan-oyoq mukammal to'plam tayyorlab beraman.\n\n` +
-          `• 🎨 **Ranglar uyg'unligi (Color Harmony):**\n` +
-          `  Qaysi rangdagi shim bilan qanday ko'ylak, kardigan yoki poyabzal yarashishini tahlil qilaman.\n\n` +
-          `• 📏 **Bo'y va vaznga qarab aniq o'lcham (razmer) hisoblash:**\n` +
-          `  Masalan: *"Bo'yim 180 sm, vaznim 78 kg"* deb yozsangiz, sizga qaysi razmer (M, L, XL yoki shim razmeri) aniq tushishini hisoblab beraman.\n\n` +
-          `• 🛍️ **${storeName} kolleksiyasi va narxlar:**\n` +
-          `  Kurtkalar, bomberlar, kardiganlar, jinsi va chinos shimlar, Loro Piana loferlar, krossovkalar va boshqa barcha 20+ turdagi mahsulotlarimiz haqida to'liq ma'lumot beraman.\n\n` +
-          `• 📍 **Filiallar va yetkazib berish:**\n` +
-          `  Chilonzor, Yunusobod va Sergeli filiallarimiz manzili, ish vaqti hamda Toshkent bo'ylab 1-3 soatlik tezkor dostavka shartlarini tushuntiraman.\n\n` +
-          `💡 *Sizga hozir qaysi masala bo'yicha yordam kerak? Masalan, biror tadbirga look tanlaymizmi yoki o'lchamingizni hisoblaymizmi?*`
-        : `Я персональный AI-стилист и консультант бренда **${storeName}** 👔🤖\n\n` +
-          `Вот чем я могу вам помочь:\n\n` +
-          `• 🥂 **Готовые образы для любых событий:**\n` +
-          `  Подбор лука на вечеринку, свадьбу, день рождения, в офис или на каждый день из вещей нашего шоурума.\n\n` +
-          `• 🎨 **Цветовые сочетания и стиль:**\n` +
-          `  Гармония оттенков верха, низа, обуви и аксессуаров.\n\n` +
-          `• 📏 **Расчет точного размера:**\n` +
-          `  Назовите рост и вес (например: *"Рост 178, вес 75"*), и я мгновенно рассчитаю ваш идеальный размер.\n\n` +
-          `• 🛍️ **Каталог товаров и цены:**\n` +
-          `  Наличие бомберов, кардиганов, джинсов, лоферов и костюмов.\n\n` +
-          `• 📍 **Адреса филиалов и доставка:**\n` +
-          `  Филиалы Чиланзар, Юнусабад, Сергели и быстрая доставка по Ташкенту за 1–3 часа.`;
-
-    // F. BAZM / PARTY / VECHER / LOOK TAYYORLAB BER / OBRAZ TUZIB BER
-    } else if (
-      lowerMsg.includes("bazm") ||
-      lowerMsg.includes("party") ||
-      lowerMsg.includes("vecher") ||
-      lowerMsg.includes("ziyofat") ||
-      lowerMsg.includes("look tayyorlab") ||
-      lowerMsg.includes("look tuzib") ||
-      lowerMsg.includes("look qilib") ||
-      lowerMsg.includes("obraz tuzib") ||
-      lowerMsg.includes("obraz tayyorlab") ||
-      lowerMsg.includes("obraz qilib") ||
-      lowerMsg.includes("kiyim tanlab") ||
-      lowerMsg.includes("stil qilib") ||
-      lowerMsg.includes("look kerak") ||
-      lowerMsg.includes("obraz kerak") ||
-      lowerMsg.includes("вечеринк") ||
-      lowerMsg.includes("тусовк") ||
-      lowerMsg.includes("пати")
-    ) {
+        ? `📏 **Aniq o'lchamni aniqlash uchun:**\n\n` +
+          `Menga **bo'yingiz (sm)** va **vazningizni (kg)** yozing — masalan: *"Bo'yim 178 sm, vaznim 75 kg"*.\n\n` +
+          `Agar poyabzal razmeri kerak bo'lsa, oyoq uzunligini santimetrda yozing (*"27 sm"*). Shuningdek, **"O'lchamni aniqlash"** kalkulyatoridan slayderlar yordamida ham foydalanishingiz mumkin!`
+        : `📏 **Чтобы точно определить ваш размер:**\n\n` +
+          `Напишите ваш **рост (см)** и **вес (кг)** — например: *"Рост 178 см, вес 75 кг"*.\n` +
+          `Для обуви укажите длину стопы в см (*"27 см"*). Вы также можете воспользоваться вкладкой **"Определить размер"**!`;
+    } else if (/filial|qayerda|adres|joylash|manzil|lokatsiya|адрес|где|филиал/i.test(lowerMsg)) {
+      const branchesTextUz =
+        branches.length > 0
+          ? branches
+              .map((b, i) => `${i + 1}. 📍 **${b.name}:** ${b.address}\n   *(Mo'ljal: ${b.landmark}, Tel: ${b.phone})*`)
+              .join("\n\n")
+          : `📍 ${storeName} — Toshkent shahri`;
       reply = isUz
-        ? `🥂 **Bazm va Kechki Davralar uchun Maxsus "Night-Out & Smart-Casual" Look:**\n\n` +
-          `Bazm va kechki tantanalarda ham ortiqcha rasmiyatchilikdan holi bo'lish, ham o'ta didli, zamonaviy va nufuzli ko'rinish uchun quyidagi qatlamli kombinatsiya eng mukammal tanlovdir:\n\n` +
-          `• 👕 **1. Asosiy ichki qatlam:**\n` +
-          `  **Oksford uzun yengli paxta ko'ylak** (250,000 so'm, oq yoki nafis moviy) — 100% zich paxta, yuqori 1-2 tugmasini ochib kiyilsa juda erkin va zamonaviy ko'rinadi.\n` +
-          `  *(Zamonaviyroq variant: **Trikotaj yoqali polo ko'ylak** — 220,000 so'm).*\n\n` +
-          `• 🧥 **2. Stil beruvchi ustki qatlam:**\n` +
-          `  **Yengil bahor-kuzgi bomber kurtka** (420,000 so'm) — zamonaviy shahar uslubi va yelkalarni keng ko'rsatuvchi bichim.\n` +
-          `  *(Yoki qulay trikotaj: **Klassik zamokli trikotaj kardigan** — 280,000 so'm).*\n\n` +
-          `• 👖 **3. Shim:**\n` +
-          `  **Klassik erkaklar chinos shimi** (290,000 so'm, qora yoki to'q bej) yoki to'g'ri bichimli **Klassik to'g'ri bichimli jinsi shim** (320,000 so'm).\n\n` +
-          `• 👞 **4. Poyabzal:**\n` +
-          `  Tabiiy zamshli **Zamshli klassik lofer poyabzali** (Loro Piana uslubida, 450,000 so'm) yoki toza oq **Oq charm kundalik krossovka** (390,000 so'm).\n\n` +
-          `• 💼 **5. Aksessuar:**\n` +
-          `  Tabiiy charmdan ishlangan **Charm kamar va minimalist hamyon to'plami** (180,000 so'm).\n\n` +
-          `💡 **Stilist siri:** Bazmda soat va kamar rangi poyabzal bilan uyg'un bo'lishi butun obrazingizni 2 barobar hashamatliroq ko'rsatadi! Barcha kiyimlar hozir do'konimiz filiallarida mavjud.`
-        : `🥂 **Стильный образ для вечеринки и вечернего выхода (Night-Out Smart-Casual):**\n\n` +
-          `• 👕 **1. Базовый слой:** Белая или светло-голубая рубашка **Oxford Long Sleeve** (250 000 сум) или вязаное поло (220 000 сум).\n` +
-          `• 🧥 **2. Верхний слой:** Легкий бомбер **Lightweight Bomber** (420 000 сум) или кардиган на молнии (280 000 сум).\n` +
-          `• 👖 **3. Низ:** Брюки **Classic Chinos** (290 000 сум) или прямые джинсы **Straight Fit** (320 000 сум).\n` +
-          `• 👞 **4. Обувь:** Замшевые лоферы в стиле Loro Piana (450 000 сум) или белые кожаные кеды (390 000 сум).\n` +
-          `• 💼 **5. Детали:** Комплект кожаного ремня и портмоне (180 000 сум).\n\n` +
-          `💡 Все позиции доступны к примерке в наших шоурумах Ташкента или с доставкой за 1–3 часа!`;
-
-    // G. JONLIMISAN / ODAMMISAN / KIM BU / AI MISAN
-    } else if (
-      lowerMsg.includes("jonlimisan") ||
-      lowerMsg.includes("tirikmisan") ||
-      lowerMsg.includes("odammi") ||
-      lowerMsg.includes("odammisan") ||
-      lowerMsg.includes("sen kimsan") ||
-      lowerMsg.includes("kimsan") ||
-      lowerMsg.includes("botmisan") ||
-      lowerMsg.includes("robot") ||
-      lowerMsg.includes("живой") ||
-      lowerMsg.includes("ты кто")
-    ) {
+        ? `📍 **${storeName} filiallari manzillari:**\n\n${branchesTextUz}\n\n⏰ **Ish vaqti:** ${settings.workingHoursUz}`
+        : `📍 **Филиалы ${storeName}:**\n\n${branchesList}\n\n⏰ **График работы:** ${settings.workingHoursRu}`;
+    } else if (/vaqt|ish vaqt|ochiq|yopiq|nechagacha|график|время|работ/i.test(lowerMsg)) {
       reply = isUz
-        ? `Men **${storeName}** erkaklar kiyimlari brendi uchun maxsus yaratilgan sun'iy intellekt (AI) stilist maslahatchisiman 🤖👔\n\n` +
-          `Men tirik inson emasman, lekin erkaklar modasi, do'kondagi barcha kiyimlar, ranglar uyg'unligi, razmer hisoblash va filiallarimiz bo'yicha professional insondek aniq va tez maslahat bera olaman.\n\n` +
-          `Sizga bugun qanday kiyim yoki obraz tanlashda yordam beray?`
-        : `Я персональный искусственный интеллект (AI-стилист), созданный специально для магазина **${storeName}** 🤖👔\n\n` +
-          `Я помогаю подобрать гардероб, рассчитать размер по росту и весу, а также ответить на любые вопросы о покупках и доставке!`;
-
-    // H. TUG'ILGAN KUN / DO'STLAR YIG'INI
-    } else if (
-      lowerMsg.includes("tug'ilgan kun") ||
-      lowerMsg.includes("tugilgan kun") ||
-      lowerMsg.includes("tug'ilgan") ||
-      lowerMsg.includes("tugilgan") ||
-      lowerMsg.includes("birthday") ||
-      lowerMsg.includes("yubiley") ||
-      lowerMsg.includes("o'rtog'im") ||
-      lowerMsg.includes("ortogim") ||
-      lowerMsg.includes("do'stim") ||
-      lowerMsg.includes("dostim") ||
-      lowerMsg.includes("jo'ra") ||
-      lowerMsg.includes("день рождения")
-    ) {
+        ? `⏰ **${storeName} ish vaqti:**\n\n• **${settings.workingHoursUz}**\n• Dam olish kunlarisiz har kuni xizmatingizdamiz!`
+        : `⏰ **График работы ${storeName}:**\n\n• **${settings.workingHoursRu}**\n• Работаем ежедневно без выходных!`;
+    } else if (/yetkaz|dostavka|kuryer|viloyat|доставк|курьер|регион/i.test(lowerMsg)) {
+      reply = formatDeliveryInfo(settings, isUz);
+    } else if (/to'lov|tolov|karta|click|payme|uzum|naqd|оплат|карт/i.test(lowerMsg)) {
       reply = isUz
-        ? `🎉 **O'rtog'ingizning Tug'ilgan Kuni / Do'stlar Davrasi uchun Smart-Casual Obraz:**\n\n` +
-          `Tug'ilgan kun va bayram kechalarida ortiqcha qotib qolmaslik, lekin davrada juda didli, zamonaviy va boy ko'rinish uchun eng yaxshi to'plam:\n\n` +
-          `• 👕 **Ustki qism:** Moviy rangli **Oksford uzun yengli paxta ko'ylak** (250,000 so'm) yoki nafis to'qilgan **Trikotaj yoqali polo ko'ylak** (220,000 so'm).\n` +
-          `• 🧥 **Ustki qatlam:** Salqinroq havoda **Yengil bahor-kuzgi bomber kurtka** (420,000 so'm) yoki qulay trikotaj **Klassik zamokli trikotaj kardigan** (280,000 so'm).\n` +
-          `• 👖 **Shim:** Qora yoki bej rangli **Klassik erkaklar chinos shimi** (290,000 so'm) yoki to'g'ri bichimli qora **Klassik to'g'ri bichimli jinsi shim** (320,000 so'm).\n` +
-          `• 👞 **Poyabzal:** Tabiiy zamshli **Zamshli klassik lofer poyabzali** (450,000 so'm) yoki toza oq charm **Oq charm kundalik krossovka** (390,000 so'm).\n\n` +
-          `Bu kombinatsiya do'stlar davrasida o'zingizni juda qulay his qilishingizni va fotosuratlarda ajoyib ko'rinishingizni ta'minlaydi!`
-        : `🎉 **Образ на день рождения друга (Smart-Casual):**\n\n` +
-          `• 👕 **Верх:** Рубашка **Oxford Long Sleeve** (250 000 сум) или вязаное поло (220 000 сум).\n` +
-          `• 🧥 **Слой:** Легкий бомбер (420 000 сум) или кардиган на молнии (280 000 сум).\n` +
-          `• 👖 **Низ:** Брюки **Classic Chinos** (290 000 сум) или прямые джинсы (320 000 сум).\n` +
-          `• 👞 **Обувь:** Замшевые лоферы (450 000 сум) или белые кожаные кеды (390 000 сум).`;
-
-    // I. TO'Y VA TANTANALAR (Wedding / Formal)
-    } else if (
-      lowerMsg.includes("to'y") ||
-      lowerMsg.includes("toy") ||
-      lowerMsg.includes("nikoh") ||
-      lowerMsg.includes("kelin") ||
-      lowerMsg.includes("marosim") ||
-      lowerMsg.includes("tantana") ||
-      lowerMsg.includes("oqshom") ||
-      lowerMsg.includes("hashamatli") ||
-      lowerMsg.includes("свадьб") ||
-      lowerMsg.includes("торжеств")
-    ) {
-      reply = isUz
-        ? `🤵 **To'y va Katta Tantanalar uchun Hashamatli Obraz (Formal Classic):**\n\n` +
-          `To'y va rasmiy marosimlarda erkak kishi jiddiy, maqomli va hashamatli ko'rinishi zarur:\n\n` +
-          `• 👔 **Ustki qism:** Oq rangli **Oksford uzun yengli paxta ko'ylak** (250,000 so'm) — 100% toza paxta, qat'iy yoqa.\n` +
-          `• 👖 **Shim:** **Klassik jun aralashmali shim (strelkali)** (310,000 so'm) yoki **Klassik erkaklar chinos shimi** (290,000 so'm).\n` +
-          `• 👞 **Poyabzal:** Tabiiy zamshli **Zamshli klassik lofer poyabzali** (450,000 so'm) yoki klassik charm tufli.\n` +
-          `• 💼 **Aksessuar:** Tabiiy charmdan ishlangan **Charm kamar va minimalist hamyon to'plami** (180,000 so'm).\n\n` +
-          `💡 *Tavsiya:* Oq ko'ylak va qora yoki to'q ko'k klassik shim to'y marosimlarida yuzingizga tiniq nur beradi va barcha rasmlarda mukammal ko'rinadi!`
-        : `🤵 **Образ для свадьбы и торжеств:**\n\n` +
-          `• 👔 **Верх:** Белоснежная рубашка **Oxford Long Sleeve** (250 000 сум).\n` +
-          `• 👖 **Брюки:** Классические шерстяные со стрелками (310 000 сум) или чинос (290 000 сум).\n` +
-          `• 👞 **Обувь:** Замшевые лоферы в стиле Loro Piana (450 000 сум).\n` +
-          `• 💼 **Аксессуары:** Комплект кожаного ремня и кошелька (180 000 сум).`;
-
-    // J. BIZNES, OFIS, ISH UCHRASHUVI
-    } else if (
-      /\b(biznes|ofis|delovoy|muzokara|suhbat|suhbati)\b/i.test(lowerMsg) ||
-      lowerMsg.includes("ishga") ||
-      lowerMsg.includes("ish joyi") ||
-      lowerMsg.includes("ish kiyimi") ||
-      lowerMsg.includes("ofis kiyim")
-    ) {
-      reply = isUz
-        ? `💼 **Biznes va Ofis uchun Smart-Casual Obraz:**\n\n` +
-          `Hamkorlar bilan muzokarada va ish joyida ishonchli, nufuzli va zamonaviy ko'rinish uchun:\n\n` +
-          `• 👕 **Ichki qatlam:** **Trikotaj yoqali polo ko'ylak** (220,000 so'm) yoki moviy rangli **Oksford uzun yengli paxta ko'ylak** (250,000 so'm).\n` +
-          `• 🧶 **Ustki qatlam:** **Klassik zamokli trikotaj kardigan** (280,000 so'm) — ofisda galstuksiz ham juda nufuzli ko'rinish beradi.\n` +
-          `• 👖 **Shim:** Qora yoki to'q bej **Klassik erkaklar chinos shimi** (290,000 so'm).\n` +
-          `• 👞 **Poyabzal:** **Zamshli klassik lofer poyabzali** (450,000 so'm) yoki toza oq **Oq charm kundalik krossovka** (390,000 so'm).`
-        : `💼 **Деловой офисный стиль (Smart Casual):**\n\n` +
-          `• 👕 **Верх:** Поло **Polo Collar Knitted** (220 000 сум) или рубашка **Oxford** (250 000 сум).\n` +
-          `• 🧶 **Слой:** Кардиган **Classic Zip-Up** (280 000 сум).\n` +
-          `• 👖 **Низ:** Брюки **Classic Chinos** (290 000 сум).\n` +
-          `• 👞 **Обувь:** Замшевые лоферы (450 000 сум) или белые кеды (390 000 сум).`;
-
-    // K. ROMANTIK UCHRASHUV / KECHKI TAOM
-    } else if (
-      lowerMsg.includes("romantik") ||
-      lowerMsg.includes("uchrashuv") ||
-      lowerMsg.includes("qiz bilan") ||
-      lowerMsg.includes("kechki taom") ||
-      lowerMsg.includes("kechki ovqat") ||
-      lowerMsg.includes("restoran") ||
-      lowerMsg.includes("kafe") ||
-      lowerMsg.includes("свидани")
-    ) {
-      reply = isUz
-        ? `☕ **Romantik Uchrashuv va Kechki Restoran Obrazi:**\n\n` +
-          `Uchrashuvda nozik didli va e'tiborli erkak taassurotini qoldirish uchun:\n\n` +
-          `• 👕 **Ustki qism:** **Dumaloq yoqali baza sviter** (230,000 so'm) yoki **Trikotaj yoqali polo ko'ylak** (220,000 so'm).\n` +
-          `• 🧥 **Tashqi qatlam:** **Yengil bahor-kuzgi bomber kurtka** (420,000 so'm) yoki **Klassik denim jinsi kurtka** (410,000 so'm).\n` +
-          `• 👖 **Shim:** Qora yoki to'q ko'k **Klassik to'g'ri bichimli jinsi shim** (320,000 so'm).\n` +
-          `• 👟 **Poyabzal:** **Oq charm kundalik krossovka** (390,000 so'm) yoki **Zamshli klassik lofer** (450,000 so'm).\n\n` +
-          `💡 *Maslahat:* Sokin to'q ranglar va toza oq poyabzal sizni har doim jozibador ko'rsatadi!`
-        : `☕ **Образ для романтического свидания:**\n\n` +
-          `• 👕 **Верх:** Базовый свитер (230 000 сум) или трикотажное поло (220 000 сум).\n` +
-          `• 🧥 **Куртка:** Бомбер (420 000 сум) или джинсовая куртка (410 000 сум).\n` +
-          `• 👖 **Джинсы:** Прямые джинсы **Straight Fit** (320 000 сум).\n` +
-          `• 👟 **Обувь:** Белые кожаные кеды (390 000 сум).`;
-
-    // L. KURTKALAR VA USTKI KIYIMLAR
-    } else if (
-      lowerMsg.includes("kurtka") ||
-      lowerMsg.includes("bomber") ||
-      lowerMsg.includes("jiletka") ||
-      lowerMsg.includes("jilet") ||
-      lowerMsg.includes("vetrovka") ||
-      lowerMsg.includes("palto") ||
-      lowerMsg.includes("ustki kiyim") ||
-      lowerMsg.includes("куртк") ||
-      lowerMsg.includes("бомбер")
-    ) {
-      reply = isUz
-        ? `🧥 **${storeName} Do'konidagi Ustki Kiyimlar Kolleksiyasi:**\n\n` +
-          `1. 🧥 **Yengil bahor-kuzgi bomber kurtka** — **420,000 so'm** (O'lchamlar: M, L, XL, 2XL)\n` +
-          `   *Shamol va yomg'ir o'tkazmaydigan zamonaviy mato, har qanday kiyim ustidan juda yarashadi.*\n\n` +
-          `2. 🧥 **Klassik denim jinsi kurtka** — **410,000 so'm** (O'lchamlar: M, L, XL, 2XL)\n` +
-          `   *Toza ko'k denim mato, hech qachon modadan qolmaydigan baza.*\n\n` +
-          `3. 🦺 **Izolyatsiyalangan yengsiz jiletka (Puffer Vest)** — **350,000 so'm** (O'lchamlar: M, L, XL, 2XL)\n` +
-          `   *Yengil va issiq, sviter yoki xudi ustidan kiyish uchun ideal.*\n\n` +
-          `Barcha kurtkalarni filiallarimizda kiyib ko'rishingiz yoki Toshkent bo'ylab 1-3 soatda yetkazib berishga buyurtma berishingiz mumkin!`
-        : `🧥 **Коллекция курток и верхней одежды ${storeName}:**\n\n` +
-          `1. Бомбер демисезонный **Lightweight Bomber** — 420 000 сум (M–2XL)\n` +
-          `2. Классическая джинсовая куртка **Denim Jacket** — 410 000 сум (M–2XL)\n` +
-          `3. Утепленный жилет **Puffer Vest** — 350 000 сум (M–2XL)\n\n` +
-          `Все модели в наличии во всех 3 филиалах Ташкента!`;
-
-    // M. SHIMLAR VA JINSILAR
-    } else if (
-      lowerMsg.includes("shim") ||
-      lowerMsg.includes("jinsi") ||
-      lowerMsg.includes("chinos") ||
-      lowerMsg.includes("kargo") ||
-      lowerMsg.includes("jogger") ||
-      lowerMsg.includes("bryuk") ||
-      lowerMsg.includes("джинс") ||
-      lowerMsg.includes("брюк")
-    ) {
-      reply = isUz
-        ? `👖 **${storeName} Erkaklar Shimlari va Jinsilari:**\n\n` +
-          `1. 👖 **Klassik erkaklar chinos shimi** — **290,000 so'm** (Razmerlar: 30-36)\n` +
-          `   *Paxta va elastan aralashmasi, ofis va kundalik smart-casual uchun eng ko'p sotilgan modelimiz.*\n\n` +
-          `2. 👖 **Klassik to'g'ri bichimli jinsi shim (Straight Fit)** — **320,000 so'm** (Razmerlar: 29-36)\n` +
-          `   *Baquvvat paxta denim mato, oyoqda to'g'ri va chiroyli o'tiradi.*\n\n` +
-          `3. 👖 **Kargo jogger shimi** — **270,000 so'm** (Razmerlar: 29-34)\n` +
-          `   *Yon cho'ntakli, zamonaviy ko'cha (urban) uslubi uchun qulay.*\n\n` +
-          `4. 👖 **Klassik jun aralashmali shim (strelkali)** — **310,000 so'm** (Razmerlar: 30-36)\n` +
-          `   *Tantanalar, to'y va rasmiy tadbirlar uchun hashamatli variant.*`
-        : `👖 **Мужские брюки и джинсы ${storeName}:**\n\n` +
-          `1. Брюки чинос **Classic Chinos** — 290 000 сум (30–36)\n` +
-          `2. Прямые джинсы **Straight Fit** — 320 000 сум (29–36)\n` +
-          `3. Брюки карго **Cargo Jogger** — 270 000 сум (29–34)\n` +
-          `4. Шерстяные классические брюки со стрелками — 310 000 сум (30–36).`;
-
-    // N. POYABZALLAR
-    } else if (
-      lowerMsg.includes("poyabzal") ||
-      lowerMsg.includes("poyafzal") ||
-      lowerMsg.includes("oyoq kiyim") ||
-      lowerMsg.includes("lofer") ||
-      lowerMsg.includes("tufli") ||
-      lowerMsg.includes("krossovka") ||
-      lowerMsg.includes("krasovka") ||
-      lowerMsg.includes("etik") ||
-      lowerMsg.includes("chelsi") ||
-      lowerMsg.includes("обувь") ||
-      lowerMsg.includes("кроссовк") ||
-      lowerMsg.includes("лофер")
-    ) {
-      reply = isUz
-        ? `👞 **${storeName} Premium Poyabzallar To'plami:**\n\n` +
-          `1. 👞 **Zamshli klassik lofer poyabzali (Loro Piana Style)** — **450,000 so'm** (Razmerlar: 39-44)\n` +
-          `   *Yumshoq tabiiy zamsh, qulay oq taglik, oyoqni charchatmaydi.*\n\n` +
-          `2. 👟 **Oq charm kundalik krossovka** — **390,000 so'm** (Razmerlar: 40-44)\n` +
-          `   *Tabiiy charm, har qanday shim va jinsi bilan universal mos tushadi.*\n\n` +
-          `3. 🥾 **Tabiiy zamshli chelsi etiklari** — **520,000 so'm** (Razmerlar: 40-44)\n` +
-          `   *Salqin havo uchun qulay va hashamatli premium etiklar.*`
-        : `👞 **Мужская обувь ${storeName}:**\n\n` +
-          `1. Замшевые лоферы **Loro Piana Style** — 450 000 сум (39–44)\n` +
-          `2. Белые кожаные кеды Casual — 390 000 сум (40–44)\n` +
-          `3. Замшевые ботинки челси — 520 000 сум (40–44).`;
-
-    // O. FILIALLAR VA LOKATSIYALAR
-    } else if (
-      lowerMsg.includes("filial") ||
-      lowerMsg.includes("qayerda") ||
-      lowerMsg.includes("adres") ||
-      lowerMsg.includes("joylash") ||
-      lowerMsg.includes("manzil") ||
-      lowerMsg.includes("chilonzor") ||
-      lowerMsg.includes("yunusobod") ||
-      lowerMsg.includes("sergeli") ||
-      lowerMsg.includes("адрес") ||
-      lowerMsg.includes("где") ||
-      lowerMsg.includes("филиал")
-    ) {
-      const branchesTextUz = settings.branches
-        .map((b, i) => `${i + 1}. 📍 **${b.name}:** ${b.address}\n   *(Mo'ljal: ${b.landmark}, Tel: ${b.phone})*`)
-        .join("\n\n");
-      reply = isUz
-        ? `📍 **Toshkent shahridagi ${storeName} filiallari:**\n\n${branchesTextUz}\n\n` +
-          `⏰ **Ish tartibi:** ${settings.workingHoursUz} (dam olish kunlarisiz, har kuni soat 10:00 dan 22:00 gacha).`
-        : `📍 **Наши филиалы в Ташкенте:**\n\n${branchesList}\n\n` +
-          `⏰ **Режим работы:** ${settings.workingHoursRu} (без выходных, ежедневно с 10:00 до 22:00).`;
-
-    // P. ISH VAQTI
-    } else if (
-      lowerMsg.includes("vaqt") ||
-      lowerMsg.includes("ish vaqt") ||
-      lowerMsg.includes("ochiq") ||
-      lowerMsg.includes("yopiq") ||
-      lowerMsg.includes("soat nechagacha") ||
-      lowerMsg.includes("время") ||
-      lowerMsg.includes("график")
-    ) {
-      reply = isUz
-        ? `⏰ **MODA UZ Do'konining Ish Vaqti:**\n\n` +
-          `• Har kuni: **10:00 dan 22:00 gacha**\n` +
-          `• Dam olish kunlarisiz uzluksiz ishlaydi (shanba va yakshanba kunlari ham ochiq)!`
-        : `⏰ **График работы ${storeName}:**\n\n` +
-          `• Ежедневно: **с 10:00 до 22:00** (без выходных).`;
-
-    // Q. YETKAZIB BERISH (DOSTAVKA)
-    } else if (
-      lowerMsg.includes("yetkaz") ||
-      lowerMsg.includes("dostavka") ||
-      lowerMsg.includes("kuryer") ||
-      lowerMsg.includes("viloyat") ||
-      lowerMsg.includes("доставк")
-    ) {
-      reply = isUz
-        ? `🚚 **Yetkazib Berish Xizmati (Dostavka):**\n\n` +
-          `• 🏎️ **Toshkent shahri bo'ylab:** Yandex / BTS kuryerlik orqali **1-3 soat ichida** eshikkacha tezkor yetkazib beriladi.\n` +
-          `• 📦 **O'zbekistonning barcha viloyatlariga:** Pochta / kuryerlik orqali **1-2 ish kunida** xavfsiz yetkaziladi.\n\n` +
-          `Sayt orqali to'g'ridan-to'g'ri buyurtma bersangiz, menejerimiz bir necha daqiqada siz bilan bog'lanadi!`
-        : `🚚 **Условия доставки:**\n\n` +
-          `• 🏎️ **По Ташкенту:** Доставка за **1–3 часа** до двери.\n` +
-          `• 📦 **По регионам Узбекистана:** Почтовая доставка за **1–2 рабочих дня**.`;
-
-    // R. TO'LOV VA KARTA
-    } else if (
-      lowerMsg.includes("to'lov") ||
-      lowerMsg.includes("karta") ||
-      lowerMsg.includes("click") ||
-      lowerMsg.includes("payme") ||
-      lowerMsg.includes("uzum") ||
-      lowerMsg.includes("оплат")
-    ) {
-      reply = isUz
-        ? `💳 **To'lov Usullari:**\n\n` +
-          `• 🔵 **Click** (ilovaga 1-bosishda o'tish yoki karta orqali)\n` +
-          `• 🟢 **Payme** (ilovaga 1-bosishda o'tish)\n` +
-          `• 🟣 **Uzum Bank** (tezkor o'tkazma)\n` +
-          `• 💳 **Uzcard, Humo, Visa, Mastercard**\n` +
+        ? `💳 **${storeName} do'konida to'lov usullari:**\n\n` +
+          `• 🔵 **Click** va 🟢 **Payme** (ilovadan 1 bosishda)\n` +
+          `• 🟣 **Uzum Bank** orqali\n` +
+          `• 💳 **Uzcard / Humo** kartalari\n` +
           `• 💵 **Naqd pul** (kuryerga yoki filialda)\n\n` +
-          `Karta raqamimiz: **${settings.cardNumber}** (${settings.cardHolder}).`
-        : `💳 **Способы оплаты:**\n\n` +
-          `• 🔵 **Click**, 🟢 **Payme**, 🟣 **Uzum Bank**, картами Uzcard/Humo/Visa или наличными при получении.`;
-
-    // S. RAHMAT / ZO'R / GAP YO'Q / TUSHUNDIM
-    } else if (
-      lowerMsg.includes("rahmat") ||
-      lowerMsg.includes("raxmat") ||
-      lowerMsg.includes("katta rahmat") ||
-      lowerMsg.includes("zo'r") ||
-      lowerMsg.includes("zor") ||
-      lowerMsg.includes("gap yo'q") ||
-      lowerMsg.includes("gap yoq") ||
-      lowerMsg.includes("tushundim") ||
-      lowerMsg.includes("tashakkur") ||
-      lowerMsg.includes("спасибо") ||
-      lowerMsg.includes("отлично")
-    ) {
+          `To'lov kartasi (${settings.cardBank}): **${settings.cardNumber}** (${settings.cardHolder}).`
+        : `💳 **Способы оплаты в ${storeName}:**\n\n` +
+          `• 🔵 **Click**, 🟢 **Payme**, 🟣 **Uzum Bank**, карты **Uzcard / Humo** или **наличными** при получении.\n` +
+          `Карта (${settings.cardBank}): **${settings.cardNumber}** (${settings.cardHolder}).`;
+    } else if (/aloqa|bog'lan|boglan|telefon|nomer|raqam|admin|menejer|telegram|instagram|телефон|связ|контакт|номер/i.test(lowerMsg)) {
       reply = isUz
-        ? `Arzimaydi, sizga yordam berganimdan juda xursandman! 😊👔\n\n` +
-          `Agar boshqa kiyimlar, ranglar kombinatsiyasi yoki o'lcham bo'yicha savollaringiz bo'lsa, istalgan vaqtda yozishingiz mumkin. Shuningdek, filiallarimizga tashrif buyurib, kiyimlarni bemalol kiyib ko'rishingiz mumkin. Xaridingiz barakali bo'lsin!`
-        : `Пожалуйста! Всегда рад помочь! 😊👔 Если возникнут еще вопросы по стилю или размерам — обращайтесь в любое время!`;
-
-    // T. SALOM / GREETINGS
-    } else if (
-      /^(salom|assalom|assalomu alaykum|qalaysiz|qalesiz|qalesan|privet|hi|hello|hayrli kun)\b/i.test(lowerMsg)
-    ) {
+        ? `📞 **${storeName} bilan bog'lanish:**\n\n` +
+          `• **Telefon:** ${settings.phone1}${settings.phone2 ? ` / ${settings.phone2}` : ""}\n` +
+          `• **Telegram:** ${settings.telegramUrl}\n` +
+          `• **Instagram:** ${settings.instagramUrl} (${settings.storeHandle})\n` +
+          `• **Ish vaqti:** ${settings.workingHoursUz}`
+        : `📞 **Контакты ${storeName}:**\n\n` +
+          `• **Телефон:** ${settings.phone1}${settings.phone2 ? ` / ${settings.phone2}` : ""}\n` +
+          `• **Telegram:** ${settings.telegramUrl}\n` +
+          `• **Instagram:** ${settings.instagramUrl} (${settings.storeHandle})\n` +
+          `• **График работы:** ${settings.workingHoursRu}`;
+    } else if (/nima qila|vazifang|imkoniyat|yordam|kimsan|что ты|чем помож|кто ты/i.test(lowerMsg)) {
       reply = isUz
-        ? `Assalomu alaykum! Xush kelibsiz! Men **${storeName}** do'konining shaxsiy stilist maslahatchisiman 👔\n\n` +
-          `Bugun sizga qanday maslahat yoki kiyim kerak? Masalan, biror tadbirga (to'y, bazm, tug'ilgan kun, ofis) tayyor look tanlaymizmi, bo'y-vazningizga qarab o'lchamingizni hisoblaymizmi yoki do'kondagi kiyimlar haqida ma'lumot beraymi?`
-        : `Здравствуйте! Добро пожаловать! Я персональный AI-стилист **${storeName}** 👔\n\n` +
-          `Чем могу вам помочь? Могу подобрать стильный образ для любого события, рассчитать ваш размер или рассказать о наличии товаров в шоурумах!`;
-
-    // U. CONTEXTUAL & INTELLIGENT DYNAMIC FALLBACK
+        ? `Men **${storeName}** do'konining **AI Yordamchisi**man 🤖\n\n` +
+          `Sizga ikkita asosiy yo'nalishda yordam beraman:\n` +
+          `1. 📏 **O'lchamni aniq aniqlash:** Bo'yingiz va vazningizga ko'ra kiyim, shim, kostyum hamda oyoq sm bo'yicha poyabzal razmeringizni hisoblab beraman.\n` +
+          `2. 🏬 **Do'kon haqidagi xabarlarga javob:** Filiallar manzili, ish vaqti, dostavka narxlari, to'lov turlari, almashtirish tartibi va mahsulotlar mavjudligi haqida javob beraman.`
+        : `Я **AI Помощник** магазина **${storeName}** 🤖\n\n` +
+          `Мои основные задачи:\n` +
+          `1. 📏 **Определение точного размера** одежды и обуви по вашим параметрам.\n` +
+          `2. 🏬 **Ответы на вопросы о магазине:** адреса филиалов, график, доставка, оплата, обмен и наличие товаров.`;
+    } else if (/rahmat|raxmat|tashakkur|zo'r|zor|спасибо|отлично/i.test(lowerMsg)) {
+      reply = isUz
+        ? `Arzimaydi! Yordam bera olganimdan xursandman 😊 Yana o'lcham yoki do'kon haqida savollaringiz bo'lsa, bemalol yozing.`
+        : `Пожалуйста! Рад помочь 😊 Если появятся вопросы по размерам или заказу — пишите в любое время.`;
+    } else if (/^(salom|assalom|assalomu|qalaysiz|privet|hi|hello|здравствуй)/i.test(lowerMsg)) {
+      reply = isUz
+        ? `Assalomu alaykum! **${storeName}** AI Yordamchisiga xush kelibsiz 🤖\n\nO'lchamingizni aniqlash kerakmi yoki do'konimiz haqida (filiallar, yetkazib berish, to'lov, mahsulotlar) savolingiz bormi? Yozib yuboring!`
+        : `Здравствуйте! Добро пожаловать в AI Помощник **${storeName}** 🤖\n\nПомочь определить ваш размер или ответить на вопрос о магазине (филиалы, доставка, оплата, товары)? Напишите ваш вопрос!`;
     } else {
-      const hasColor = /qora|oq|ko'k|moviy|bej|jigarrang|kulrang|yashil|qizil|черный|белый|синий/i.test(lowerMsg);
-      const hasStyleWord = /kiyim|stil|look|obraz|kiyinish|tanlash|tavsiya|mos|yarashadi|fason|moda/i.test(lowerMsg);
-
-      if (hasColor) {
+      // Dynamic catalog search for any product/price message
+      const matchedProducts = findMatchingProducts(inStockProducts, lowerMsg);
+      if (matchedProducts.length > 0) {
+        const listText = matchedProducts
+          .map(
+            (p) =>
+              `• **${isUz ? p.name : p.nameRu || p.name}** — **${p.price.toLocaleString("uz-UZ")} ${isUz ? "so'm" : "сум"}** (${isUz ? "O'lchamlar" : "Размеры"}: ${p.sizes.join(", ")})`
+          )
+          .join("\n");
         reply = isUz
-          ? `Ranglar uyg'unligi bo'yicha tavsiyam:\n\n` +
-            `• **Qora rangli shimlar:** Oq yoki moviy **Oksford ko'ylak**, qaymoqrang trikotaj kardigan va toza oq **krossovka** yoki qora **zamsh lofer** bilan ajoyib yarashadi.\n` +
-            `• **Bej / qaymoqrang chinos:** To'q ko'k polo, qora bomber kurtka va jigarrang zamsh lofer bilan juda boy ko'rinadi.\n` +
-            `• **Ko'k jinsi shimlar:** Oq zich futbolka, qora zamokli kardigan va oq krossovka bilan zamonaviy kundalik look beradi.\n\n` +
-            `Aynan qaysi kiyimingizga mos rang tanlamoqchisiz? Yozsangiz, do'kondagi mavjud kiyimlarimizdan eng mosini ko'rsataman!`
-          : `Совет по сочетанию цветов: базовые тона (белый, черный, темно-синий и бежевый) отлично дополняют друг друга. Напишите, какой цвет или вещь вы хотите скомбинировать!`;
-      } else if (hasStyleWord) {
+          ? `🛍️ So'rovingiz bo'yicha katalogdagi mavjud mahsulotlar:\n\n${listText}\n\nQaysi o'lcham sizga mos kelishini aniqlash uchun bo'yingiz va vazningizni yozing!`
+          : `🛍️ Подходящие товары из каталога в наличии:\n\n${listText}\n\nНапишите ваш рост и вес, чтобы я подобрал точный размер!`;
+      } else if (/mahsulot|katalog|narx|qancha|necha pul|товар|катал|цена|сколько/i.test(lowerMsg)) {
+        const sample = inStockProducts
+          .slice(0, 6)
+          .map((p) => `• **${isUz ? p.name : p.nameRu || p.name}** — **${p.price.toLocaleString("uz-UZ")} ${isUz ? "so'm" : "сум"}** (${p.sizes.join(", ")})`)
+          .join("\n");
         reply = isUz
-          ? `Siz uchun **${storeName}** kolleksiyasidan 3 xil eng ommabop tayyor obrazni tavsiya qilaman:\n\n` +
-            `1. 👔 **Smart-Casual:** Oksford uzun yengli ko'ylak (250,000 so'm) + Klassik chinos shim (290,000 so'm) + Zamshli lofer (450,000 so'm).\n` +
-            `2. 🏙️ **Urban Street:** Yengil bomber kurtka (420,000 so'm) + Oversize futbolka (160,000 so'm) + To'g'ri bichimli jinsi (320,000 so'm) + Oq krossovka (390,000 so'm).\n` +
-            `3. 🤵 **Tantanali / Rasmiy:** Klassik jun shim (310,000 so'm) + Oq ko'ylak + Zamsh lofer + Charm kamar to'plami (180,000 so'm).\n\n` +
-            `Ushbu uslublardan qaysi biri sizga ko'proq ma'qul keladi? O'lchamingizni aytsangiz, aniq razmerlarni ham aytib beraman!`
-          : `Рекомендую 3 готовых образа:\n\n` +
-            `1. Smart-Casual: рубашка Oxford + чинос + лоферы.\n` +
-            `2. Urban: бомбер + оверсайз футболка + джинсы + белые кеды.\n` +
-            `3. Classic: шерстяные брюки + белая рубашка + лоферы.\n\n` +
-            `Какой стиль вам ближе?`;
+          ? `🛍️ **${storeName}** katalogida hozir **${inStockProducts.length} ta** mahsulot mavjud:\n\n${sample}\n\nBarchasini **Katalog** bo'limida ko'rishingiz yoki aynan qiziqtirgan kiyim nomini yozishingiz mumkin.`
+          : `🛍️ В каталоге **${storeName}** сейчас доступно **${inStockProducts.length}** товаров:\n\n${sample}\n\nНапишите название интересующей модели, и я подскажу цену и размеры!`;
       } else {
         reply = isUz
-          ? `Savolingizni tushundim! Men **${storeName}** AI maslahatchisiman.\n\n` +
-            `Sizga erkaklar kiyimlari, ranglar mosligi, o'lcham tanlash (masalan bo'y-vazningizga qarab) yoki do'kondagi 20+ turdagi mahsulotlarimiz (kurtkalar, jinsilar, loferlar, ko'ylaklar) bo'yicha to'liq yordam bera olaman.\n\n` +
-            `Menga aynan qanday kiyim yoki tadbir uchun qidirayotganingizni yozsangiz, darhol mukammal tavsiya beraman!`
-          : `Понял ваш вопрос! Я AI-стилист **${storeName}**. Могу подобрать образ, рассчитать размер по росту и весу или рассказать о наличии одежды в шоурумах. Напишите, что именно вас интересует!`;
+          ? `Xabaringizni qabul qildim! Men **${storeName}** AI Yordamchisiman 🤖\n\nSizga quyidagilarda darhol yordam bera olaman:\n` +
+            `• 📏 **O'lcham aniqlash:** *"Bo'yim 178 sm, vaznim 75 kg"* yoki *"27 sm oyoq"*\n` +
+            `• 📍 **Filiallar va ish vaqti:** *"Filiallar qayerda?"*\n` +
+            `• 🚚 **Yetkazib berish va to'lov:** *"Dostavka qancha?"*, *"To'lov turlari"*\n` +
+            `• 🛍️ **Mahsulotlar va almashtirish:** Istalgan kiyim nomi yoki bog'lanish ma'lumotlari.\n\n` +
+            `Agar operator bilan gaplashmoqchi bo'lsangiz: **${settings.phone1}**`
+          : `Я **AI Помощник** магазина **${storeName}** 🤖\n\nМогу помочь с:\n` +
+            `• 📏 **Подбором размера:** напишите *"Рост 178, вес 75"* или длину стопы\n` +
+            `• 📍 **Адресами и графиком работы**\n` +
+            `• 🚚 **Доставкой, оплатой и обменом**\n` +
+            `• 🛍️ **Наличием и ценами товаров**\n\n` +
+            `Связь с менеджером: **${settings.phone1}**`;
       }
     }
 
     return NextResponse.json({
       success: true,
       reply,
-      provider: "conversational-ai",
+      provider: "assistant-engine",
     });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);

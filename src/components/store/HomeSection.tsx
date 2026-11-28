@@ -34,7 +34,6 @@ interface HomeSectionProps {
   onSelectProduct: (product: Product, mode?: "detail" | "checkout") => void;
   onAddToCart: (product: Product, size?: string, color?: string, quantity?: number) => void;
   onViewCatalog: (category?: string) => void;
-  onOpenAiMode: () => void;
   onOpenBranches: () => void;
   onOpenWifiModal: () => void;
   onOpenPhoneModal: () => void;
@@ -52,7 +51,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
   onSelectProduct,
   onAddToCart,
   onViewCatalog,
-  onOpenAiMode,
   onOpenBranches,
   onOpenWifiModal,
   onOpenPhoneModal,

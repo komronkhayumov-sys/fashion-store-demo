@@ -28,7 +28,7 @@ export const AiAssistantWidget: React.FC<AiAssistantWidgetProps> = ({ lang }) =>
       text:
         lang === "ru"
           ? "Здравствуйте! Я AI-консультант MODA UZ. Чем могу вам помочь? Вы можете спросить о филиалах, доставке по Ташкенту или подобрать нужный размер!"
-          : "Assalomu alaykum! Men MODA UZ do'konining sun'iy intellekt stilistiman. Sizga qanday yordam bera olaman? Filiallarimiz, yetkazib berish yoki o'lcham tanlash haqida so'rashingiz mumkin!",
+          : "Assalomu alaykum! Men MODA UZ do'konining AI Yordamchisiman. Sizga qanday yordam bera olaman? O'lchamlarni aniqlash yoki do'konimiz haqida istalgan savolingizni yozishingiz mumkin!",
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
